@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ownly · Homes for sale</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav id="topnav"></nav>
+
+  <header class="page-hero">
+    <div class="wrap">
+      <div>
+        <h1>Homes for sale</h1>
+        <p>Homes for sale in Ames, Iowa. Houses and townhouses show the Ownly estimate, so you can see at a glance whether the asking price is fair.</p>
+      </div>
+      <a class="btn btn-light" href="/sell.html">List your home</a>
+    </div>
+  </header>
+
+  <main class="wrap page-main">
+    <form class="card filters" id="filters">
+      <label>Neighbourhood<select name="area"><option value="">All neighbourhoods</option></select></label>
+      <label>Type<select name="type"><option value="">Any type</option></select></label>
+      <label>Max price
+        <select name="max_price">
+          <option value="">Any price</option>
+          <option value="200000">$200,000</option>
+          <option value="300000">$300,000</option>
+          <option value="400000">$400,000</option>
+          <option value="500000">$500,000</option>
+          <option value="750000">$750,000</option>
+          <option value="1000000">$1,000,000</option>
+        </select>
+      </label>
+      <label>Bedrooms
+        <select name="min_beds">
+          <option value="">Any</option>
+          <option value="1">1+</option>
+          <option value="2">2+</option>
+          <option value="3">3+</option>
+          <option value="4">4+</option>
+          <option value="5">5+</option>
+        </select>
+      </label>
+      <label>Sort by
+        <select name="sort">
+          <option value="newest">Newest first</option>
+          <option value="price_asc">Price: low to high</option>
+          <option value="price_desc">Price: high to low</option>
+          <option value="value">Best value vs. estimate</option>
+        </select>
+      </label>
+    </form>
+
+    <div class="browse-layout">
+      <div>
+        <p class="muted result-count" id="result-count" aria-live="polite"></p>
+        <div class="listing-grid" id="grid"></div>
+      </div>
+      <div class="card browse-map-card">
+        <div id="browse-map" role="application" aria-label="Map of homes for sale"></div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="common.js"></script>
+  <script src="homes.js"></script>
+</body>
+</html>

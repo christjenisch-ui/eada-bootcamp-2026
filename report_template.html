@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>House Price Models</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7;
+  --surface: #fcfcfb;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #898781;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --border: rgba(11,11,11,0.10);
+  --s1: #2a78d6;
+  --s2: #eb6834;
+  --s1-wash: rgba(42,120,214,0.10);
+  --good: #006300;
+  --tag-bg: #f0efec;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7;
+    --muted: #898781; --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+    --s1: #3987e5; --s2: #d95926; --s1-wash: rgba(57,135,229,0.12); --good: #0ca30c; --tag-bg: #2c2c2a;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7;
+  --muted: #898781; --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+  --s1: #3987e5; --s2: #d95926; --s1-wash: rgba(57,135,229,0.12); --good: #0ca30c; --tag-bg: #2c2c2a;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--page); color: var(--ink);
+  font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+main { max-width: 1080px; margin: 0 auto; padding: 40px 16px 64px; }
+h1 { font-size: 28px; line-height: 1.2; margin: 0 0 6px; letter-spacing: -0.01em; }
+h2 { font-size: 19px; margin: 0 0 4px; }
+.lede { color: var(--ink-2); margin: 0 0 28px; max-width: 760px; }
+.sub { color: var(--ink-2); margin: 0 0 16px; font-size: 14px; }
+section.card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 22px 22px 18px; margin-bottom: 20px;
+}
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.tile { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+.tile .label { color: var(--ink-2); font-size: 13px; }
+.tile .value { font-size: 30px; font-weight: 600; line-height: 1.2; margin-top: 4px; }
+.tile .foot { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+.tile .foot.good { color: var(--good); }
+svg { display: block; width: 100%; height: auto; overflow: visible; }
+svg text { fill: var(--muted); font-size: 12px; font-family: inherit; }
+svg .lbl { fill: var(--ink-2); font-size: 13px; }
+svg .val { fill: var(--ink); font-size: 12px; font-variant-numeric: tabular-nums; }
+svg .grid { stroke: var(--grid); stroke-width: 1; }
+svg .axis { stroke: var(--axis); stroke-width: 1; }
+.legend { display: flex; gap: 18px; flex-wrap: wrap; font-size: 13px; color: var(--ink-2); margin: 0 0 8px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+.legend i.bar { border-radius: 2px; width: 14px; }
+.legend i.line { border-radius: 0; height: 0; width: 16px; border-top: 2px dashed var(--muted); vertical-align: 3px; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+th, td { padding: 9px 10px; text-align: right; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+th { color: var(--ink-2); font-weight: 600; font-size: 12.5px; cursor: pointer; user-select: none; }
+th:hover { color: var(--ink); }
+th:first-child, td:first-child { text-align: left; }
+td.best { font-weight: 700; }
+tbody tr:hover { background: var(--s1-wash); }
+.tag { font-size: 11px; color: var(--ink-2); background: var(--tag-bg); border-radius: 4px; padding: 1px 6px; margin-left: 6px; }
+.note { color: var(--muted); font-size: 12.5px; margin-top: 10px; }
+.multiples { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
+.multiples figure { margin: 0; }
+.multiples figcaption { font-size: 13px; color: var(--ink-2); margin-bottom: 2px; }
+.multiples figcaption b { color: var(--ink); font-weight: 600; }
+dl.glossary { display: grid; grid-template-columns: max-content 1fr; gap: 8px 18px; margin: 8px 0 0; font-size: 14px; }
+dl.glossary dt { font-weight: 600; }
+dl.glossary dd { margin: 0; color: var(--ink-2); }
+ul.findings { margin: 8px 0 0; padding-left: 20px; color: var(--ink-2); }
+ul.findings li { margin-bottom: 6px; }
+ul.findings b { color: var(--ink); }
+#tip {
+  position: fixed; pointer-events: none; z-index: 10; opacity: 0; transition: opacity .1s;
+  background: var(--surface); color: var(--ink); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 10px; font-size: 12.5px; line-height: 1.45;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12); max-width: 260px;
+}
+#tip .t { font-weight: 600; margin-bottom: 2px; }
+#tip .r { color: var(--ink-2); }
+.hit { fill: transparent; cursor: default; }
+@media (max-width: 600px) {
+  h1 { font-size: 23px; }
+  section.card { padding: 16px 14px; }
+  dl.glossary { grid-template-columns: 1fr; gap: 2px; }
+  dl.glossary dd { margin-bottom: 8px; }
+}
+</style>
+</head>
+<body>
+<main>
+  <h1>House price model comparison</h1>
+  <p class="lede" id="lede"></p>
+
+  <div class="tiles" id="tiles"></div>
+
+  <section class="card">
+    <h2>Which model predicts best?</h2>
+    <p class="sub">Average prediction error (RMSE) across 5-fold cross-validation on the training set. Shorter is better; whiskers show ±1 standard deviation across folds.</p>
+    <div class="legend"><span><i class="bar" style="background:var(--s1)"></i>CV RMSE ($1000s)</span><span><i class="line"></i>Naive baseline: always predict the average price</span></div>
+    <div id="rank"></div>
+  </section>
+
+  <section class="card">
+    <h2>All KPIs</h2>
+    <p class="sub">Test metrics come from houses the models never saw during training. Click a column header to sort. Best value per column in bold.</p>
+    <div class="table-wrap"><table id="kpi"></table></div>
+  </section>
+
+  <section class="card">
+    <h2>Overfitting check: training vs test R²</h2>
+    <p class="sub">A big gap between the two dots means the model memorised the training houses rather than learning general patterns.</p>
+    <div class="legend"><span><i style="background:var(--s1)"></i>Train R²</span><span><i style="background:var(--s2)"></i>Test R²</span></div>
+    <div id="gap"></div>
+  </section>
+
+  <section class="card">
+    <h2>Predicted vs actual price, test set</h2>
+    <p class="sub">Each dot is one house. Dots on the dashed diagonal are perfect predictions. x-axis: actual price, y-axis: predicted price, both in $1000s.</p>
+    <div class="multiples" id="scatter"></div>
+  </section>
+
+  <section class="card">
+    <h2 id="imp-title">What drives the price?</h2>
+    <p class="sub">Permutation importance: how much test RMSE gets worse when one feature is randomly shuffled. Bigger = the model relies on it more.</p>
+    <div id="imp"></div>
+  </section>
+
+  <section class="card">
+    <h2>Takeaways</h2>
+    <ul class="findings" id="findings"></ul>
+  </section>
+
+  <section class="card">
+    <h2>KPI glossary</h2>
+    <dl class="glossary">
+      <dt>RMSE</dt><dd>Root mean squared error, in $1000s. The typical size of a prediction miss, with big misses penalised extra.</dd>
+      <dt>CV RMSE</dt><dd>RMSE averaged over 5 cross-validation folds of the training data. More stable than a single test split, so it is used for ranking.</dd>
+      <dt>MAE</dt><dd>Mean absolute error, in $1000s. The average miss, without extra weight on large errors.</dd>
+      <dt>R²</dt><dd>Share of price variation the model explains. 1.0 is perfect, 0 is no better than guessing the average.</dd>
+      <dt>MAPE</dt><dd>Mean absolute percentage error. The average miss as a % of the true price.</dd>
+      <dt>Overfit gap</dt><dd>Train R² minus test R². Large values mean the model fits training data much better than new data.</dd>
+      <dt>Fit time</dt><dd>Seconds to train once on the training houses.</dd>
+    </dl>
+  </section>
+</main>
+<div id="tip" role="tooltip"></div>
+
+<script>
+const DATA = /*__DATA__*/null;
+const R = DATA.results;
+const NS = "http://www.w3.org/2000/svg";
+const fmt = (v, d = 2) => v.toFixed(d);
+
+function el(tag, attrs = {}, parent) {
+  const n = document.createElementNS(NS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(n);
+  return n;
+}
+function text(parent, x, y, s, attrs = {}) {
+  const t = el("text", { x, y, ...attrs }, parent);
+  t.textContent = s;
+  return t;
+}
+function niceTicks(max, count = 5) {
+  const raw = max / count, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => s >= raw);
+  const out = [];
+  for (let v = 0; v < max + step - 1e-9; v += step) out.push(+v.toFixed(6));
+  return out;
+}
+// Horizontal bar: rounded data-end, square at the baseline
+function hbarPath(x0, y, w, h, r = 4) {
+  r = Math.min(r, w, h / 2);
+  return `M${x0},${y} H${x0 + w - r} Q${x0 + w},${y} ${x0 + w},${y + r} V${y + h - r} Q${x0 + w},${y + h} ${x0 + w - r},${y + h} H${x0} Z`;
+}
+
+const tip = document.getElementById("tip");
+function showTip(e, html) {
+  tip.innerHTML = html;
+  tip.style.opacity = 1;
+  const pad = 14, w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = e.clientX + pad, y = e.clientY + pad;
+  if (x + w > innerWidth - 8) x = e.clientX - w - pad;
+  if (y + h > innerHeight - 8) y = e.clientY - h - pad;
+  tip.style.left = x + "px"; tip.style.top = y + "px";
+}
+function hideTip() { tip.style.opacity = 0; }
+function bindTip(node, html) {
+  node.addEventListener("mousemove", e => showTip(e, html));
+  node.addEventListener("mouseleave", hideTip);
+}
+const tipRow = (k, v) => `<div class="r">${k}: <b style="color:var(--ink)">${v}</b></div>`;
+
+// ---------- Header & tiles ----------
+const best = R[0], d = DATA.dataset;
+const lin = R.find(r => r.model === "Linear Regression");
+R.forEach(r => r.gap = r.train_r2 - r.test_r2);
+document.getElementById("lede").textContent =
+  `${R.length} regression models trained on the Boston Housing dataset (${d.rows} neighbourhoods, ${d.features} features) ` +
+  `to predict the median home value (MEDV, in $1000s; range ${d.target_min}–${d.target_max}, mean ${fmt(d.target_mean, 1)}). ` +
+  `${d.train_rows} houses used for training, ${d.test_rows} held out for testing. All models are intentionally small; ` +
+  `the slowest trains in ${fmt(Math.max(...R.map(r => r.fit_seconds)), 1)} s.`;
+
+const improvement = (1 - best.test_rmse / DATA.baseline_rmse) * 100;
+const tiles = [
+  { label: "Best model", value: best.model, foot: "Ranked by cross-validated RMSE", small: true },
+  { label: "Test RMSE", value: "$" + fmt(best.test_rmse) + "k", foot: `${fmt(improvement, 0)}% lower than naive baseline ($${fmt(DATA.baseline_rmse)}k)`, good: true },
+  { label: "Test R²", value: fmt(best.test_r2, 3), foot: `Linear regression: ${fmt(lin.test_r2, 3)}` },
+  { label: "Test MAE", value: "$" + fmt(best.test_mae) + "k", foot: `Avg miss ≈ ${fmt(best.test_mape, 1)}% of price` },
+];
+document.getElementById("tiles").innerHTML = tiles.map(t => `
+  <div class="tile"><div class="label">${t.label}</div>
+  <div class="value" ${t.small ? 'style="font-size:22px;padding-top:6px"' : ""}>${t.value}</div>
+  <div class="foot${t.good ? " good" : ""}">${t.foot}</div></div>`).join("");
+
+// ---------- Ranking bar chart ----------
+(function rank() {
+  const W = 1000, rowH = 38, top = 8, left = 200, right = 90, H = top + R.length * rowH + 30;
+  const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Bar chart of cross-validated RMSE by model" });
+  const maxV = Math.max(DATA.baseline_rmse, ...R.map(r => r.cv_rmse_mean + r.cv_rmse_std)) * 1.05;
+  const ticks = niceTicks(maxV);
+  const xMax = ticks[ticks.length - 1], plotW = W - left - right;
+  const x = v => left + v / xMax * plotW;
+  const plotB = top + R.length * rowH;
+  ticks.forEach(t => {
+    el("line", { x1: x(t), x2: x(t), y1: top, y2: plotB, class: t === 0 ? "axis" : "grid" }, svg);
+    text(svg, x(t), plotB + 18, t, { "text-anchor": "middle" });
+  });
+  R.forEach((r, i) => {
+    const y = top + i * rowH, bh = 22, by = y + (rowH - bh) / 2, cy = y + rowH / 2;
+    const lab = text(svg, left - 12, cy + 4, r.model, { "text-anchor": "end", class: "lbl" });
+    if (i === 0) lab.setAttribute("font-weight", "600");
+    el("path", { d: hbarPath(x(0), by, x(r.cv_rmse_mean) - x(0), bh), fill: "var(--s1)" }, svg);
+    const lo = x(r.cv_rmse_mean - r.cv_rmse_std), hi = x(r.cv_rmse_mean + r.cv_rmse_std);
+    el("line", { x1: lo, x2: hi, y1: cy, y2: cy, stroke: "var(--ink-2)", "stroke-width": 1.5 }, svg);
+    [lo, hi].forEach(px => el("line", { x1: px, x2: px, y1: cy - 5, y2: cy + 5, stroke: "var(--ink-2)", "stroke-width": 1.5 }, svg));
+    text(svg, hi + 8, cy + 4, fmt(r.cv_rmse_mean), { class: "val" });
+    const hit = el("rect", { x: 0, y, width: W, height: rowH, class: "hit" }, svg);
+    bindTip(hit, `<div class="t">${r.model}</div>` + tipRow("CV RMSE", `${fmt(r.cv_rmse_mean)} ± ${fmt(r.cv_rmse_std)}`) +
+      tipRow("Test RMSE", fmt(r.test_rmse)) + tipRow("Test R²", fmt(r.test_r2, 3)) +
+      `<div class="r" style="margin-top:4px">${r.note}</div>`);
+  });
+  const bx = x(DATA.baseline_rmse);
+  el("line", { x1: bx, x2: bx, y1: top - 4, y2: plotB, stroke: "var(--muted)", "stroke-width": 1.5, "stroke-dasharray": "4 4" }, svg);
+  text(svg, bx - 6, plotB - 8, `baseline ${fmt(DATA.baseline_rmse)}`, { "text-anchor": "end" });
+  text(svg, left + plotW / 2, H, "RMSE ($1000s)", { "text-anchor": "middle" });
+  document.getElementById("rank").appendChild(svg);
+})();
+
+// ---------- KPI table ----------
+(function table() {
+  const cols = [
+    { k: "model", h: "Model", f: r => r.model + (r.requested ? "" : '<span class="tag">extra</span>') },
+    { k: "cv_rmse_mean", h: "CV RMSE", f: r => `${fmt(r.cv_rmse_mean)} <span style="color:var(--muted)">± ${fmt(r.cv_rmse_std)}</span>`, low: true },
+    { k: "test_rmse", h: "Test RMSE", low: true },
+    { k: "test_mae", h: "Test MAE", low: true },
+    { k: "test_r2", h: "Test R²", d: 3 },
+    { k: "test_mape", h: "Test MAPE", f: r => fmt(r.test_mape, 1) + "%", low: true },
+    { k: "train_r2", h: "Train R²", d: 3, nobest: true },
+    { k: "gap", h: "Overfit gap", d: 3, low: true },
+    { k: "fit_seconds", h: "Fit time (s)", d: 2, low: true },
+  ];
+  const bestVal = {};
+  cols.slice(1).forEach(c => {
+    if (c.nobest) return;
+    const vals = R.map(r => r[c.k]);
+    bestVal[c.k] = c.low ? Math.min(...vals) : Math.max(...vals);
+  });
+  let sortKey = "cv_rmse_mean", asc = true;
+  const tbl = document.getElementById("kpi");
+  function render() {
+    const rows = [...R].sort((a, b) => {
+      const av = a[sortKey], bv = b[sortKey];
+      return (typeof av === "string" ? av.localeCompare(bv) : av - bv) * (asc ? 1 : -1);
+    });
+    tbl.innerHTML = "<thead><tr>" + cols.map(c =>
+      `<th data-k="${c.k}">${c.h}${c.k === sortKey ? (asc ? " ▲" : " ▼") : ""}</th>`).join("") + "</tr></thead><tbody>" +
+      rows.map(r => "<tr>" + cols.map(c => {
+        const v = c.f ? c.f(r) : fmt(r[c.k], c.d ?? 2);
+        const isBest = c.k in bestVal && r[c.k] === bestVal[c.k];
+        return `<td class="${isBest ? "best" : ""}">${v}</td>`;
+      }).join("") + "</tr>").join("") + "</tbody>";
+    tbl.querySelectorAll("th").forEach(th => th.onclick = () => {
+      const k = th.dataset.k;
+      asc = sortKey === k ? !asc : !(k === "test_r2" || k === "train_r2");
+      sortKey = k; render();
+    });
+  }
+  render();
+})();
+
+// ---------- Train vs test R² dumbbell ----------
+(function gap() {
+  const W = 1000, rowH = 34, top = 8, left = 200, right = 30, H = top + R.length * rowH + 30;
+  const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Train versus test R squared per model" });
+  const lo = Math.max(0, Math.floor(Math.min(...R.map(r => r.test_r2)) * 10) / 10 - 0.1), hi = 1;
+  const plotW = W - left - right, x = v => left + (v - lo) / (hi - lo) * plotW;
+  const plotB = top + R.length * rowH;
+  for (let t = lo; t <= hi + 1e-9; t += 0.1) {
+    el("line", { x1: x(t), x2: x(t), y1: top, y2: plotB, class: "grid" }, svg);
+    text(svg, x(t), plotB + 18, t.toFixed(1), { "text-anchor": "middle" });
+  }
+  R.forEach((r, i) => {
+    const cy = top + i * rowH + rowH / 2;
+    text(svg, left - 12, cy + 4, r.model, { "text-anchor": "end", class: "lbl" });
+    el("line", { x1: x(r.test_r2), x2: x(r.train_r2), y1: cy, y2: cy, stroke: "var(--axis)", "stroke-width": 2 }, svg);
+    el("circle", { cx: x(r.train_r2), cy, r: 6, fill: "var(--s1)", stroke: "var(--surface)", "stroke-width": 2 }, svg);
+    el("circle", { cx: x(r.test_r2), cy, r: 6, fill: "var(--s2)", stroke: "var(--surface)", "stroke-width": 2 }, svg);
+    const hit = el("rect", { x: 0, y: cy - rowH / 2, width: W, height: rowH, class: "hit" }, svg);
+    bindTip(hit, `<div class="t">${r.model}</div>` + tipRow("Train R²", fmt(r.train_r2, 3)) +
+      tipRow("Test R²", fmt(r.test_r2, 3)) + tipRow("Gap", fmt(r.gap, 3)));
+  });
+  text(svg, left + plotW / 2, H, "R²", { "text-anchor": "middle" });
+  document.getElementById("gap").appendChild(svg);
+})();
+
+// ---------- Predicted vs actual small multiples ----------
+(function scatter() {
+  const wrap = document.getElementById("scatter");
+  const all = R.flatMap(r => r.predictions.flat());
+  const lo = 0, hi = Math.ceil(Math.max(...all) / 10) * 10;
+  const S = 260, m = { l: 32, r: 8, t: 8, b: 26 }, pw = S - m.l - m.r, ph = S - m.t - m.b;
+  const sx = v => m.l + (v - lo) / (hi - lo) * pw, sy = v => m.t + ph - (v - lo) / (hi - lo) * ph;
+  R.forEach(r => {
+    const fig = document.createElement("figure");
+    fig.innerHTML = `<figcaption><b>${r.model}</b> · RMSE ${fmt(r.test_rmse)} · R² ${fmt(r.test_r2, 3)}</figcaption>`;
+    const svg = el("svg", { viewBox: `0 0 ${S} ${S}`, role: "img", "aria-label": `${r.model} predicted versus actual` });
+    for (let t = lo; t <= hi; t += 10) {
+      el("line", { x1: sx(t), x2: sx(t), y1: m.t, y2: m.t + ph, class: "grid" }, svg);
+      el("line", { x1: m.l, x2: m.l + pw, y1: sy(t), y2: sy(t), class: "grid" }, svg);
+      text(svg, sx(t), S - 10, t, { "text-anchor": "middle", "font-size": 10 });
+      text(svg, m.l - 5, sy(t) + 3, t, { "text-anchor": "end", "font-size": 10 });
+    }
+    el("line", { x1: sx(lo), y1: sy(lo), x2: sx(hi), y2: sy(hi), stroke: "var(--muted)", "stroke-width": 1, "stroke-dasharray": "4 4" }, svg);
+    r.predictions.forEach(([a, p]) => {
+      el("circle", { cx: sx(a), cy: sy(p), r: 4, fill: "var(--s1)", "fill-opacity": 0.75, stroke: "var(--surface)", "stroke-width": 1.5 }, svg);
+      const hit = el("circle", { cx: sx(a), cy: sy(p), r: 8, class: "hit" }, svg);
+      bindTip(hit, `<div class="t">${r.model}</div>` + tipRow("Actual", "$" + fmt(a, 1) + "k") +
+        tipRow("Predicted", "$" + fmt(p, 1) + "k") + tipRow("Error", (p - a >= 0 ? "+" : "") + fmt(p - a, 1) + "k"));
+    });
+    fig.appendChild(svg);
+    wrap.appendChild(fig);
+  });
+})();
+
+// ---------- Feature importance ----------
+(function imp() {
+  document.getElementById("imp-title").textContent = `What drives the price? (${DATA.best_model})`;
+  const I = DATA.importance;
+  const W = 1000, rowH = 30, top = 4, left = 330, right = 70, H = top + I.length * rowH + 30;
+  const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Permutation feature importance" });
+  const maxV = Math.max(...I.map(f => f.mean)) * 1.05;
+  const ticks = niceTicks(maxV), xMax = ticks[ticks.length - 1], plotW = W - left - right;
+  const x = v => left + Math.max(0, v) / xMax * plotW, plotB = top + I.length * rowH;
+  ticks.forEach(t => {
+    el("line", { x1: x(t), x2: x(t), y1: top, y2: plotB, class: t === 0 ? "axis" : "grid" }, svg);
+    text(svg, x(t), plotB + 18, t, { "text-anchor": "middle" });
+  });
+  I.forEach((f, i) => {
+    const y = top + i * rowH, bh = 18, cy = y + rowH / 2;
+    text(svg, left - 12, cy + 4, `${f.feature} · ${f.description}`, { "text-anchor": "end", class: "lbl" });
+    const w = x(f.mean) - x(0);
+    if (w > 0.5) el("path", { d: hbarPath(x(0), cy - bh / 2, w, bh), fill: "var(--s1)" }, svg);
+    text(svg, x(f.mean) + 8, cy + 4, fmt(Math.max(f.mean, 0)), { class: "val" });
+    const hit = el("rect", { x: 0, y, width: W, height: rowH, class: "hit" }, svg);
+    bindTip(hit, `<div class="t">${f.feature}</div><div class="r">${f.description}</div>` +
+      tipRow("RMSE increase when shuffled", `${fmt(f.mean)} ± ${fmt(f.std)}`));
+  });
+  text(svg, left + plotW / 2, H, "Increase in test RMSE ($1000s)", { "text-anchor": "middle" });
+  document.getElementById("imp").appendChild(svg);
+})();
+
+// ---------- Takeaways ----------
+(function findings() {
+  const top2 = DATA.importance.slice(0, 2).map(f => `<b>${f.feature}</b> (${f.description.toLowerCase()})`);
+  const mostOverfit = [...R].sort((a, b) => b.gap - a.gap)[0];
+  const items = [
+    `<b>${best.model} is the best model</b>: CV RMSE ${fmt(best.cv_rmse_mean)} and test RMSE ${fmt(best.test_rmse)}, so predictions are typically off by about $${Math.round(best.test_rmse * 1000).toLocaleString()} on a mean price of $${Math.round(d.target_mean * 1000).toLocaleString()}.`,
+    `<b>Tree ensembles dominate.</b> XGBoost, LightGBM, Random Forest and the stacking ensemble form the top group; their CV error bars overlap, so the differences between them are small relative to fold-to-fold noise.`,
+    `<b>Linear regression is the weakest</b> (test R² ${fmt(lin.test_r2, 3)}) because price relates non-linearly to rooms and % lower-status population. It still clearly beats the naive baseline and is the easiest model to explain.`,
+    `<b>The neural network and SVR land in the middle.</b> With only ${d.train_rows} training houses, there is not enough data for a neural net to beat boosted trees.`,
+    `<b>${mostOverfit.model} has the largest overfit gap</b> (${fmt(mostOverfit.gap, 3)}). A gap is acceptable as long as test error stays low, which is the case for the tree ensembles.`,
+    `<b>Top drivers:</b> ${top2.join(" and ")} matter far more than any other feature.`,
+    `<b>Caveats:</b> the test set is only ${d.test_rows} houses, so single-split numbers are noisy (that is why ranking uses CV). ${d.capped_at_50} houses are capped at $50k in the source data. Hyperparameters were set by hand, not tuned. Feature B encodes a racial demographic proxy and should be dropped for any real-world use.`,
+  ];
+  document.getElementById("findings").innerHTML = items.map(i => `<li>${i}</li>`).join("");
+})();
+</script>
+</body>
+</html>

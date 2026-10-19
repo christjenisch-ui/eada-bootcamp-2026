@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ownly · Sign in</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav id="topnav"></nav>
+  <main class="wrap auth-wrap">
+    <div class="card auth-card">
+      <div class="tabs" role="tablist">
+        <button type="button" role="tab" data-mode="signin" aria-selected="true">Sign in</button>
+        <button type="button" role="tab" data-mode="register" aria-selected="false">Create account</button>
+      </div>
+
+      <form id="signin-form" novalidate>
+        <h1>Welcome back</h1>
+        <p class="muted small-text">Sign in to list a home or contact sellers.</p>
+        <p class="form-error" hidden></p>
+        <div class="form-field">
+          <label for="signin-email">Email</label>
+          <input id="signin-email" name="email" type="email" autocomplete="email" required>
+        </div>
+        <div class="form-field">
+          <label for="signin-password">Password</label>
+          <input id="signin-password" name="password" type="password" autocomplete="current-password" required>
+        </div>
+        <button class="btn btn-block" type="submit">Sign in</button>
+      </form>
+
+      <form id="register-form" novalidate hidden>
+        <h1>Create your account</h1>
+        <p class="muted small-text">Free. List your home or contact sellers in minutes.</p>
+        <p class="form-error" hidden></p>
+        <div class="form-field">
+          <label for="register-name">Your name <span class="opt">(optional)</span></label>
+          <input id="register-name" name="name" autocomplete="name" maxlength="100">
+        </div>
+        <div class="form-field">
+          <label for="register-email">Email</label>
+          <input id="register-email" name="email" type="email" autocomplete="email" required>
+          <p class="field-error" data-error-for="email"></p>
+        </div>
+        <div class="form-field">
+          <label for="register-password">Password</label>
+          <input id="register-password" name="password" type="password" autocomplete="new-password" minlength="8" required>
+          <p class="field-hint">At least 8 characters.</p>
+          <p class="field-error" data-error-for="password"></p>
+        </div>
+        <button class="btn btn-block" type="submit">Create account</button>
+      </form>
+    </div>
+  </main>
+  <script src="common.js"></script>
+  <script src="signin.js"></script>
+</body>
+</html>

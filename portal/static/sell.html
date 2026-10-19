@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ownly · List your home</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav id="topnav"></nav>
+
+  <header class="page-hero">
+    <div class="wrap">
+      <div>
+        <h1 id="sell-title">List your home</h1>
+        <p id="sell-sub">It's free. Add the details, check the Ownly estimate, and buyers can contact you straight away.</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap page-main">
+    <div class="card empty-state" id="gate" hidden>
+      <h2>Sign in to list your home</h2>
+      <p>You need a free Ownly account (just an email and a password) so buyers can reach you and you can manage your listing.</p>
+      <div class="btn-row" style="justify-content:center">
+        <a class="btn" id="gate-signin" href="/signin.html">Sign in</a>
+        <a class="btn btn-secondary" id="gate-register" href="/signin.html">Create an account</a>
+      </div>
+    </div>
+
+    <div class="sell-layout" id="sell-layout" hidden>
+      <form class="card" id="sell-form" novalidate>
+        <p class="form-error" hidden></p>
+
+        <section class="form-section">
+          <h2>The basics</h2>
+          <p class="muted">Where is the home and what kind of place is it?</p>
+          <div class="form-grid">
+            <div class="form-field span-2">
+              <label for="title">Listing title</label>
+              <input id="title" name="title" maxlength="100" placeholder="e.g. Bright 3-bed with garden">
+              <p class="field-error" data-error-for="title"></p>
+            </div>
+            <div class="form-field">
+              <label for="property_type">Property type</label>
+              <select id="property_type" name="property_type"><option value="">Choose…</option></select>
+              <p class="field-error" data-error-for="property_type"></p>
+            </div>
+            <div class="form-field">
+              <label for="area">Neighbourhood (Ames)</label>
+              <select id="area" name="area"><option value="">Choose…</option></select>
+              <p class="field-error" data-error-for="area"></p>
+            </div>
+            <div class="form-field span-2">
+              <label for="address">Street address</label>
+              <input id="address" name="address" maxlength="200" autocomplete="street-address" placeholder="e.g. 12 Elm Street, Apt 3">
+              <p class="field-error" data-error-for="address"></p>
+            </div>
+          </div>
+        </section>
+
+        <section class="form-section">
+          <h2>Details</h2>
+          <p class="muted">These also feed the Ownly estimate.</p>
+          <div class="form-grid cols-4">
+            <div class="form-field">
+              <label for="sqft">Living area <span class="opt">(sq ft)</span></label>
+              <input id="sqft" name="sqft" type="number" min="100" max="100000" step="1" inputmode="numeric" placeholder="e.g. 1500">
+              <p class="field-hint">Finished, above ground</p>
+              <p class="field-error" data-error-for="sqft"></p>
+            </div>
+            <div class="form-field">
+              <label for="year_built">Year built</label>
+              <input id="year_built" name="year_built" type="number" min="1700" step="1" inputmode="numeric" placeholder="e.g. 1975">
+              <p class="field-error" data-error-for="year_built"></p>
+            </div>
+            <div class="form-field">
+              <label for="bedrooms">Bedrooms</label>
+              <input id="bedrooms" name="bedrooms" type="number" min="0" max="20" step="1" inputmode="numeric">
+              <p class="field-error" data-error-for="bedrooms"></p>
+            </div>
+            <div class="form-field">
+              <label for="bathrooms">Bathrooms</label>
+              <input id="bathrooms" name="bathrooms" type="number" min="0" max="20" step="0.5" inputmode="decimal">
+              <p class="field-hint">Use .5 for a half bath</p>
+              <p class="field-error" data-error-for="bathrooms"></p>
+            </div>
+            <div class="form-field">
+              <label for="garage">Garage spaces</label>
+              <input id="garage" name="garage" type="number" min="0" max="10" step="1" inputmode="numeric" value="0">
+              <p class="field-error" data-error-for="garage"></p>
+            </div>
+            <div class="form-field span-2">
+              <label for="quality">Overall quality</label>
+              <select id="quality" name="quality"><option value="">Choose…</option></select>
+              <p class="field-hint" id="quality-hint">Finishes and materials compared with other Ames homes.</p>
+              <p class="field-error" data-error-for="quality"></p>
+            </div>
+          </div>
+        </section>
+
+        <section class="form-section">
+          <h2>Price</h2>
+          <p class="muted">Compare with the Ownly estimate on the right.</p>
+          <div class="form-grid">
+            <div class="form-field">
+              <label for="price">Asking price</label>
+              <div class="prefix-input"><span>$</span><input id="price" name="price" type="number" min="10000" step="1000" inputmode="numeric" placeholder="850000"></div>
+              <p class="field-error" data-error-for="price"></p>
+            </div>
+            <div class="form-field" style="justify-content:center">
+              <p class="field-hint" id="price-hint" aria-live="polite"></p>
+            </div>
+          </div>
+        </section>
+
+        <section class="form-section">
+          <h2>Description <span class="opt muted" style="font-weight:400;font-size:14px">(optional)</span></h2>
+          <p class="muted">What makes the home special? Light, renovations, outdoor space, transport…</p>
+          <div class="form-field">
+            <textarea id="description" name="description" maxlength="4000" aria-label="Description"></textarea>
+            <p class="field-error" data-error-for="description"></p>
+          </div>
+        </section>
+
+        <section class="form-section">
+          <h2>Contact details</h2>
+          <p class="muted">Shown to signed-in buyers. Messages also arrive in your Ownly inbox.</p>
+          <div class="form-grid">
+            <div class="form-field">
+              <label for="contact_name">Name</label>
+              <input id="contact_name" name="contact_name" maxlength="100" autocomplete="name">
+              <p class="field-error" data-error-for="contact_name"></p>
+            </div>
+            <div class="form-field">
+              <label for="contact_email">Email</label>
+              <input id="contact_email" name="contact_email" type="email" maxlength="254" autocomplete="email">
+              <p class="field-error" data-error-for="contact_email"></p>
+            </div>
+            <div class="form-field">
+              <label for="contact_phone">Phone <span class="opt">(optional)</span></label>
+              <input id="contact_phone" name="contact_phone" type="tel" maxlength="40" autocomplete="tel">
+              <p class="field-error" data-error-for="contact_phone"></p>
+            </div>
+          </div>
+        </section>
+
+        <div class="form-actions">
+          <button class="btn" type="submit" id="submit">Publish listing</button>
+          <a class="btn btn-secondary" href="/homes.html" id="cancel">Cancel</a>
+        </div>
+      </form>
+
+      <aside class="card sell-aside" aria-live="polite">
+        <div class="muted">Ownly estimate</div>
+        <div class="price-big" id="est-price">—</div>
+        <div class="muted" id="est-range">Fill in the details to see an estimate.</div>
+        <div id="est-compare"></div>
+        <button type="button" class="btn btn-secondary" id="use-estimate" hidden>Use this as my asking price</button>
+        <p class="field-hint">From the Ames model: neighbourhood, type, size, year built, bedrooms, bathrooms, garage and quality, at today's market. It's a guide, not a valuation.</p>
+      </aside>
+    </div>
+  </main>
+
+  <script src="common.js"></script>
+  <script src="sell.js"></script>
+</body>
+</html>

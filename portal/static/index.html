@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ownly · Home Value</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav id="topnav"></nav>
+
+  <header class="hero">
+    <div class="wrap">
+      <h1>What's your Ames home worth today?</h1>
+      <p>Answer a few simple questions and get an instant estimate at today's prices, from a model trained on real Ames, Iowa home sales.</p>
+      <div class="hero-stats" id="hero-stats"></div>
+      <div class="jump">
+        <a href="#why">Why this price</a>
+        <a href="#profile">Neighbourhood profile</a>
+        <a href="#records">Sales</a>
+        <a href="#all-data">All data</a>
+        <a href="#model">The model</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section id="estimate" class="wrap layout">
+      <div class="card map-card">
+        <div class="step-head">
+          <span class="step-num">1</span>
+          <div>
+            <h2>Which neighbourhood?</h2>
+            <p class="muted">Click a circle on the map or choose from the list. Circles are coloured by typical home value today.</p>
+          </div>
+        </div>
+        <div class="search">
+          <select id="nb-select" aria-label="Neighbourhood"></select>
+        </div>
+        <div id="map" role="application" aria-label="Map of Ames neighbourhoods"></div>
+        <div class="legend">
+          <span class="muted">Typical home value</span>
+          <span class="legend-bar"></span>
+          <span class="legend-labels"><span id="legend-lo"></span><span id="legend-hi"></span></span>
+        </div>
+      </div>
+
+      <div class="side">
+        <section class="card result-card" aria-live="polite">
+          <div class="result-place" id="result-place">Choose a neighbourhood to start</div>
+          <div class="result-price" id="result-price">—</div>
+          <div class="result-range" id="result-range">&nbsp;</div>
+          <div class="record-chip" id="record-chip" hidden>
+            <span id="record-chip-text"></span>
+            <button type="button" id="record-clear" aria-label="Stop using this sale">×</button>
+          </div>
+          <div class="compare" id="compare" hidden>
+            <div class="compare-track"><span class="compare-fill" id="compare-fill"></span><span class="compare-mark" id="compare-mark"></span></div>
+            <div class="compare-text" id="compare-text"></div>
+          </div>
+          <div class="result-foot" id="result-foot"></div>
+          <div class="result-actions">
+            <a class="btn" id="list-cta" href="/sell.html">List a home like this</a>
+            <a class="btn btn-secondary" id="browse-cta" href="/homes.html">Homes for sale here</a>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="step-head">
+            <span class="step-num">2</span>
+            <div>
+              <h2>About the home</h2>
+              <p class="muted">Just the basics. We fill in the rest from typical homes in the neighbourhood.</p>
+            </div>
+          </div>
+
+          <div class="field">
+            <span class="field-label">Type of home</span>
+            <div class="segmented" id="type-seg" role="radiogroup" aria-label="Type of home">
+              <button type="button" data-type="house" role="radio">House</button>
+              <button type="button" data-type="townhouse" role="radio">Townhouse</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="field-row">
+              <label class="field-label" for="area-input">Living area</label>
+              <div class="segmented small" id="unit-seg" role="radiogroup" aria-label="Unit">
+                <button type="button" data-unit="sqft" role="radio">sq ft</button>
+                <button type="button" data-unit="sqm" role="radio">m²</button>
+              </div>
+            </div>
+            <div class="range-row">
+              <input type="range" id="area-range" aria-label="Living area slider">
+              <input type="number" id="area-input" class="num-input" inputmode="numeric">
+            </div>
+            <p class="hint">Finished space above ground, not counting the basement.</p>
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="year-input">Year built</label>
+            <div class="range-row">
+              <input type="range" id="year-range" min="1872" max="2010" step="1" aria-label="Year built slider">
+              <input type="number" id="year-input" class="num-input" min="1872" max="2010" step="1" inputmode="numeric">
+            </div>
+            <p class="hint">The model learned from homes built between 1872 and 2010.</p>
+          </div>
+
+          <div class="field steppers">
+            <div>
+              <span class="field-label">Bedrooms</span>
+              <div class="stepper" data-key="bedrooms"><button type="button" data-step="-1" aria-label="Fewer bedrooms">−</button><output></output><button type="button" data-step="1" aria-label="More bedrooms">+</button></div>
+            </div>
+            <div>
+              <span class="field-label">Full bathrooms</span>
+              <div class="stepper" data-key="bathrooms"><button type="button" data-step="-1" aria-label="Fewer bathrooms">−</button><output></output><button type="button" data-step="1" aria-label="More bathrooms">+</button></div>
+            </div>
+            <div>
+              <span class="field-label">Garage spaces</span>
+              <div class="stepper" data-key="garage"><button type="button" data-step="-1" aria-label="Fewer garage spaces">−</button><output></output><button type="button" data-step="1" aria-label="More garage spaces">+</button></div>
+            </div>
+          </div>
+
+          <div class="field">
+            <span class="field-label">Overall quality</span>
+            <div class="pills" id="quality-pills"></div>
+            <p class="hint quality-desc" id="quality-desc"></p>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section id="why" class="wrap section">
+      <div class="section-head">
+        <h2>Why this price?</h2>
+        <p class="muted" id="why-sub">How each answer moves the estimate compared with a typical Ames home.</p>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <h3 class="card-title">What moves the price</h3>
+          <p class="muted small-text">Each bar shows how much the estimate changes because of that answer, compared with a typical Ames value for it (for the neighbourhood: the average of all 28).</p>
+          <div id="factor-chart" class="factor-chart"></div>
+          <div class="chart-key">
+            <span><i class="key-swatch up"></i>Raises the price</span>
+            <span><i class="key-swatch down"></i>Lowers the price</span>
+          </div>
+        </div>
+        <div class="card">
+          <h3 class="card-title">Most similar homes that sold</h3>
+          <p class="muted small-text">Real Ames sales closest to what you entered, with their price brought to today's market.</p>
+          <ol id="similar" class="similar"></ol>
+        </div>
+      </div>
+    </section>
+
+    <section id="profile" class="wrap section">
+      <div class="section-head">
+        <h2>Neighbourhood profile: <span id="profile-name">—</span></h2>
+        <p class="muted" id="profile-sub"></p>
+      </div>
+      <div id="profile-tiles" class="tiles"></div>
+    </section>
+
+    <section id="records" class="wrap section">
+      <div class="section-head">
+        <h2>Every sale in <span id="records-name">—</span></h2>
+        <p class="muted">Homes sold between 2006 and 2010, with the price they sold for and that price brought to today's market with the Ames house-price index. Click a column to sort, or press <b>Use</b> to load a home into the estimator.</p>
+      </div>
+      <div class="card table-card">
+        <div class="table-scroll">
+          <table class="data-table" id="records-table">
+            <thead></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="table-foot" id="table-foot"></div>
+      </div>
+    </section>
+
+    <section id="all-data" class="wrap section">
+      <div class="section-head">
+        <h2>All <span id="sales-count"></span> sales: size vs. value</h2>
+        <p class="muted">Every home sale in the data, valued at today's market. Bigger homes are usually worth more, but quality and neighbourhood matter a lot. Hover a dot for details, click it to load that home.</p>
+      </div>
+      <div class="card">
+        <div class="chart-legend" id="scatter-legend"></div>
+        <div id="scatter" class="scatter"></div>
+      </div>
+    </section>
+
+    <section id="model" class="wrap section">
+      <div class="section-head">
+        <h2>About the model</h2>
+        <p class="muted" id="about-model"></p>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <h3 class="card-title">Ames home prices over time</h3>
+          <p class="muted small-text" id="hpi-sub"></p>
+          <div id="hpi-chart" class="line-chart"></div>
+        </div>
+        <div class="card">
+          <h3 class="card-title">Models compared</h3>
+          <p class="muted small-text">Scored on 341 home sales from 2010 that the models never trained on. Errors are in 2010 dollars. Ownly uses the best one.</p>
+          <div class="table-scroll">
+            <table class="data-table compact" id="leaderboard"></table>
+          </div>
+        </div>
+      </div>
+      <div class="about">
+        <h3>How this works</h3>
+        <p>The model learned from 2,930 home sales in Ames, Iowa between 2006 and 2010 (the De Cock "Ames Housing" dataset). Ownly asks eight questions; everything else the model needs (lot, basement, roof and so on) is filled in from a representative home of the same type in the chosen neighbourhood.</p>
+        <p id="about-today"></p>
+        <p>Not covered: apartments, homes built after 2010, and homes outside Ames. Neighbourhood markers are approximate centres, not boundaries.</p>
+        <p class="muted small-text">Model, data and neighbourhood map from <a class="link" href="https://github.com/jordi-torras-ai/eada-bootcamp-2026">jordi-torras-ai/eada-bootcamp-2026</a>. House-price index: U.S. Federal Housing Finance Agency. Map © OpenStreetMap contributors.</p>
+      </div>
+    </section>
+  </main>
+
+  <div class="tooltip" id="tooltip" hidden></div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="common.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Ownly's local database (accounts, listings, messages)
+portal/ownly.db
+portal/ownly.db-*
+
+# Editor / OS / tool settings
+.DS_Store
+.claude/

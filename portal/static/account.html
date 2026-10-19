@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ownly · Your account</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav id="topnav"></nav>
+
+  <header class="page-hero">
+    <div class="wrap">
+      <div>
+        <h1>Your account</h1>
+        <p id="account-sub">&nbsp;</p>
+      </div>
+      <div class="btn-row">
+        <a class="btn btn-light" href="/sell.html">List a home</a>
+        <button type="button" class="btn btn-secondary" id="signout">Sign out</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap page-main">
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" data-tab="listings" aria-selected="true">My listings</button>
+      <button type="button" role="tab" data-tab="inbox" aria-selected="false">Inbox</button>
+      <button type="button" role="tab" data-tab="sent" aria-selected="false">Sent messages</button>
+    </div>
+    <section id="tab-listings" class="row-list" role="tabpanel"></section>
+    <section id="tab-inbox" class="row-list" role="tabpanel" hidden></section>
+    <section id="tab-sent" class="row-list" role="tabpanel" hidden></section>
+  </main>
+
+  <script src="common.js"></script>
+  <script src="account.js"></script>
+</body>
+</html>

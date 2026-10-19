@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>House Price Models</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7;
+  --surface: #fcfcfb;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #898781;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --border: rgba(11,11,11,0.10);
+  --s1: #2a78d6;
+  --s2: #eb6834;
+  --s1-wash: rgba(42,120,214,0.10);
+  --good: #006300;
+  --tag-bg: #f0efec;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7;
+    --muted: #898781; --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+    --s1: #3987e5; --s2: #d95926; --s1-wash: rgba(57,135,229,0.12); --good: #0ca30c; --tag-bg: #2c2c2a;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7;
+  --muted: #898781; --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+  --s1: #3987e5; --s2: #d95926; --s1-wash: rgba(57,135,229,0.12); --good: #0ca30c; --tag-bg: #2c2c2a;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--page); color: var(--ink);
+  font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+main { max-width: 1080px; margin: 0 auto; padding: 40px 16px 64px; }
+h1 { font-size: 28px; line-height: 1.2; margin: 0 0 6px; letter-spacing: -0.01em; }
+h2 { font-size: 19px; margin: 0 0 4px; }
+.lede { color: var(--ink-2); margin: 0 0 28px; max-width: 760px; }
+.sub { color: var(--ink-2); margin: 0 0 16px; font-size: 14px; }
+section.card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 22px 22px 18px; margin-bottom: 20px;
+}
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.tile { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+.tile .label { color: var(--ink-2); font-size: 13px; }
+.tile .value { font-size: 30px; font-weight: 600; line-height: 1.2; margin-top: 4px; }
+.tile .foot { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+.tile .foot.good { color: var(--good); }
+svg { display: block; width: 100%; height: auto; overflow: visible; }
+svg text { fill: var(--muted); font-size: 12px; font-family: inherit; }
+svg .lbl { fill: var(--ink-2); font-size: 13px; }
+svg .val { fill: var(--ink); font-size: 12px; font-variant-numeric: tabular-nums; }
+svg .grid { stroke: var(--grid); stroke-width: 1; }
+svg .axis { stroke: var(--axis); stroke-width: 1; }
+.legend { display: flex; gap: 18px; flex-wrap: wrap; font-size: 13px; color: var(--ink-2); margin: 0 0 8px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+.legend i.bar { border-radius: 2px; width: 14px; }
+.legend i.line { border-radius: 0; height: 0; width: 16px; border-top: 2px dashed var(--muted); vertical-align: 3px; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+th, td { padding: 9px 10px; text-align: right; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+th { color: var(--ink-2); font-weight: 600; font-size: 12.5px; cursor: pointer; user-select: none; }
+th:hover { color: var(--ink); }
+th:first-child, td:first-child { text-align: left; }
+td.best { font-weight: 700; }
+tbody tr:hover { background: var(--s1-wash); }
+.tag { font-size: 11px; color: var(--ink-2); background: var(--tag-bg); border-radius: 4px; padding: 1px 6px; margin-left: 6px; }
+.note { color: var(--muted); font-size: 12.5px; margin-top: 10px; }
+.multiples { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
+.multiples figure { margin: 0; }
+.multiples figcaption { font-size: 13px; color: var(--ink-2); margin-bottom: 2px; }
+.multiples figcaption b { color: var(--ink); font-weight: 600; }
+dl.glossary { display: grid; grid-template-columns: max-content 1fr; gap: 8px 18px; margin: 8px 0 0; font-size: 14px; }
+dl.glossary dt { font-weight: 600; }
+dl.glossary dd { margin: 0; color: var(--ink-2); }
+ul.findings { margin: 8px 0 0; padding-left: 20px; color: var(--ink-2); }
+ul.findings li { margin-bottom: 6px; }
+ul.findings b { color: var(--ink); }
+#tip {
+  position: fixed; pointer-events: none; z-index: 10; opacity: 0; transition: opacity .1s;
+  background: var(--surface); color: var(--ink); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 10px; font-size: 12.5px; line-height: 1.45;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12); max-width: 260px;
+}
+#tip .t { font-weight: 600; margin-bottom: 2px; }
+#tip .r { color: var(--ink-2); }
+.hit { fill: transparent; cursor: default; }
+@media (max-width: 600px) {
+  h1 { font-size: 23px; }
+  section.card { padding: 16px 14px; }
+  dl.glossary { grid-template-columns: 1fr; gap: 2px; }
+  dl.glossary dd { margin-bottom: 8px; }
+}
+</style>
+</head>
+<body>
+<main>
+  <h1>House price model comparison</h1>
+  <p class="lede" id="lede"></p>
+
+  <div class="tiles" id="tiles"></div>
+
+  <section class="card">
+    <h2>Which model predicts best?</h2>
+    <p class="sub">Average prediction error (RMSE) across 5-fold cross-validation on the training set. Shorter is better; whiskers show ±1 standard deviation across folds.</p>
+    <div class="legend"><span><i class="bar" style="background:var(--s1)"></i>CV RMSE ($1000s)</span><span><i class="line"></i>Naive baseline: always predict the average price</span></div>
+    <div id="rank"></div>
+  </section>
+
+  <section class="card">
+    <h2>All KPIs</h2>
+    <p class="sub">Test metrics come from houses the models never saw during training. Click a column header to sort. Best value per column in bold.</p>
+    <div class="table-wrap"><table id="kpi"></table></div>
+  </section>
+
+  <section class="card">
+    <h2>Overfitting check: training vs test R²</h2>
+    <p class="sub">A big gap between the two dots means the model memorised the training houses rather than learning general patterns.</p>
+    <div class="legend"><span><i style="background:var(--s1)"></i>Train R²</span><span><i style="background:var(--s2)"></i>Test R²</span></div>
+    <div id="gap"></div>
+  </section>
+
+  <section class="card">
+    <h2>Predicted vs actual price, test set</h2>
+    <p class="sub">Each dot is one house. Dots on the dashed diagonal are perfect predictions. x-axis: actual price, y-axis: predicted price, both in $1000s.</p>
+    <div class="multiples" id="scatter"></div>
+  </section>
+
+  <section class="card">
+    <h2 id="imp-title">What drives the price?</h2>
+    <p class="sub">Permutation importance: how much test RMSE gets worse when one feature is randomly shuffled. Bigger = the model relies on it more.</p>
+    <div id="imp"></div>
+  </section>
+
+  <section class="card">
+    <h2>Takeaways</h2>
+    <ul class="findings" id="findings"></ul>
+  </section>
+
+  <section class="card">
+    <h2>KPI glossary</h2>
+    <dl class="glossary">
+      <dt>RMSE</dt><dd>Root mean squared error, in $1000s. The typical size of a prediction miss, with big misses penalised extra.</dd>
+      <dt>CV RMSE</dt><dd>RMSE averaged over 5 cross-validation folds of the training data. More stable than a single test split, so it is used for ranking.</dd>
+      <dt>MAE</dt><dd>Mean absolute error, in $1000s. The average miss, without extra weight on large errors.</dd>
+      <dt>R²</dt><dd>Share of price variation the model explains. 1.0 is perfect, 0 is no better than guessing the average.</dd>
+      <dt>MAPE</dt><dd>Mean absolute percentage error. The average miss as a % of the true price.</dd>
+      <dt>Overfit gap</dt><dd>Train R² minus test R². Large values mean the model fits training data much better than new data.</dd>
+      <dt>Fit time</dt><dd>Seconds to train once on the training houses.</dd>
+    </dl>
+  </section>
+</main>
+<div id="tip" role="tooltip"></div>
+
+<script>
+const DATA = {"dataset": {"rows": 506, "features": 13, "train_rows": 404, "test_rows": 102, "target_mean": 22.532806324110677, "target_min": 5.0, "target_max": 50.0, "capped_at_50": 16}, "baseline_rmse": 8.662876564628665, "best_model": "XGBoost", "results": [{"model": "XGBoost", "requested": true, "note": "400 boosted trees, depth 4, learning rate 0.05, 80% row/column sampling.", "test_rmse": 2.356647295936465, "test_mae": 1.7310816381491865, "test_r2": 0.924267012581324, "test_mape": 9.141361129964576, "train_rmse": 0.504711450780842, "train_r2": 0.9970677602429495, "cv_rmse_mean": 3.3259920699155914, "cv_rmse_std": 0.7343612586035829, "fit_seconds": 0.7048562919999997, "predictions": [[23.6, 24.58], [32.4, 31.16], [13.6, 16.26], [22.8, 23.51], [16.1, 17.44], [20.0, 21.96], [17.8, 18.59], [14.0, 15.44], [19.6, 21.35], [16.8, 21.16], [21.5, 21.03], [18.9, 18.71], [7.0, 7.83], [21.2, 21.39], [18.5, 18.84], [29.8, 25.57], [18.8, 19.75], [10.2, 9.89], [50.0, 46.2], [14.1, 15.41], [25.2, 24.58], [29.1, 25.74], [12.7, 12.97], [22.4, 21.78], [14.2, 15.45], [13.8, 15.57], [20.3, 22.23], [14.9, 13.1], [21.7, 19.99], [18.3, 21.77], [23.1, 19.86], [23.8, 23.25], [15.0, 23.36], [20.8, 20.54], [19.1, 14.18], [19.4, 15.28], [34.7, 33.64], [19.5, 18.85], [24.4, 22.97], [23.4, 24.2], [19.7, 18.13], [28.2, 29.54], [50.0, 46.98], [17.4, 19.48], [22.6, 22.63], [15.1, 14.63], [13.1, 15.64], [24.2, 24.54], [19.9, 19.24], [24.0, 26.82], [18.9, 21.07], [35.4, 36.23], [15.2, 17.16], [26.5, 25.92], [43.5, 47.29], [21.2, 21.28], [18.4, 16.55], [28.5, 31.7], [23.9, 22.36], [18.5, 18.57], [25.0, 23.49], [35.4, 35.07], [31.5, 32.02], [20.2, 18.48], [24.1, 24.87], [20.0, 18.46], [13.1, 13.13], [24.8, 23.32], [30.8, 29.02], [12.7, 15.14], [20.0, 20.97], [23.7, 26.9], [10.8, 10.95], [20.6, 20.9], [20.8, 22.41], [5.0, 5.66], [20.1, 20.61], [48.5, 46.85], [10.9, 9.84], [7.0, 12.06], [20.9, 22.72], [17.2, 14.4], [20.9, 20.47], [9.7, 10.55], [19.4, 18.77], [29.0, 28.08], [16.4, 17.11], [25.0, 23.51], [25.0, 24.88], [17.1, 18.25], [23.2, 22.51], [10.4, 8.97], [19.6, 19.46], [17.2, 18.43], [27.5, 23.89], [23.0, 19.53], [50.0, 41.41], [17.9, 11.26], [9.6, 12.05], [17.2, 15.53], [22.5, 19.85], [21.4, 24.25]]}, {"model": "Stacking Ensemble", "requested": false, "note": "Extra: Random Forest + XGBoost + SVR, blended by a ridge regression.", "test_rmse": 2.7725525990205426, "test_mae": 1.7503249912710575, "test_r2": 0.895177262333104, "test_mape": 9.40703928216423, "train_rmse": 1.4900816549456706, "train_r2": 0.974441621480897, "cv_rmse_mean": 3.4043292655552397, "cv_rmse_std": 0.8882882815767692, "fit_seconds": 1.3391015000000017, "predictions": [[23.6, 25.41], [32.4, 32.35], [13.6, 15.38], [22.8, 23.17], [16.1, 16.3], [20.0, 21.31], [17.8, 18.07], [14.0, 15.03], [19.6, 21.66], [16.8, 20.37], [21.5, 20.1], [18.9, 18.05], [7.0, 11.5], [21.2, 21.7], [18.5, 18.3], [29.8, 24.44], [18.8, 19.3], [10.2, 8.34], [50.0, 47.31], [14.1, 14.23], [25.2, 24.89], [29.1, 26.66], [12.7, 13.21], [22.4, 22.82], [14.2, 16.08], [13.8, 16.42], [20.3, 21.48], [14.9, 12.18], [21.7, 19.49], [18.3, 20.44], [23.1, 21.05], [23.8, 23.72], [15.0, 22.23], [20.8, 23.21], [19.1, 14.36], [19.4, 16.01], [34.7, 34.46], [19.5, 19.54], [24.4, 22.32], [23.4, 24.47], [19.7, 18.1], [28.2, 29.86], [50.0, 48.1], [17.4, 19.06], [22.6, 24.53], [15.1, 15.11], [13.1, 14.91], [24.2, 25.44], [19.9, 18.85], [24.0, 27.2], [18.9, 19.63], [35.4, 36.48], [15.2, 16.82], [26.5, 25.14], [43.5, 47.07], [21.2, 22.24], [18.4, 15.84], [28.5, 32.38], [23.9, 24.06], [18.5, 17.72], [25.0, 25.61], [35.4, 35.51], [31.5, 31.31], [20.2, 18.48], [24.1, 25.12], [20.0, 18.53], [13.1, 14.12], [24.8, 23.72], [30.8, 29.39], [12.7, 14.35], [20.0, 21.34], [23.7, 26.3], [10.8, 9.17], [20.6, 20.41], [20.8, 22.46], [5.0, 6.47], [20.1, 20.2], [48.5, 47.22], [10.9, 10.93], [7.0, 10.52], [20.9, 21.06], [17.2, 12.27], [20.9, 19.38], [9.7, 9.58], [19.4, 19.35], [29.0, 28.09], [16.4, 16.31], [25.0, 24.18], [25.0, 24.18], [17.1, 18.54], [23.2, 23.45], [10.4, 7.96], [19.6, 19.33], [17.2, 18.31], [27.5, 26.95], [23.0, 19.75], [50.0, 31.84], [17.9, 12.21], [9.6, 10.68], [17.2, 12.52], [22.5, 21.72], [21.4, 23.66]]}, {"model": "LightGBM", "requested": false, "note": "Extra: 300 leaf-wise boosted trees, 15 leaves each.", "test_rmse": 2.804072036682494, "test_mae": 1.9210530462607291, "test_r2": 0.8927803851368892, "test_mape": 10.384539133785834, "train_rmse": 0.8139075530494455, "train_r2": 0.9923745878982168, "cv_rmse_mean": 3.466570244907623, "cv_rmse_std": 0.5931292778544063, "fit_seconds": 0.35987612499999955, "predictions": [[23.6, 25.62], [32.4, 32.16], [13.6, 15.75], [22.8, 23.19], [16.1, 18.4], [20.0, 21.77], [17.8, 19.2], [14.0, 15.84], [19.6, 21.68], [16.8, 20.65], [21.5, 21.28], [18.9, 21.05], [7.0, 5.42], [21.2, 21.04], [18.5, 19.08], [29.8, 26.28], [18.8, 19.62], [10.2, 8.57], [50.0, 46.69], [14.1, 15.15], [25.2, 25.72], [29.1, 25.87], [12.7, 13.51], [22.4, 22.53], [14.2, 15.6], [13.8, 14.63], [20.3, 23.03], [14.9, 12.44], [21.7, 21.25], [18.3, 22.22], [23.1, 19.86], [23.8, 23.19], [15.0, 25.78], [20.8, 20.43], [19.1, 13.99], [19.4, 14.79], [34.7, 35.01], [19.5, 18.93], [24.4, 22.69], [23.4, 24.05], [19.7, 19.05], [28.2, 29.72], [50.0, 45.71], [17.4, 19.61], [22.6, 23.3], [15.1, 14.53], [13.1, 14.64], [24.2, 23.87], [19.9, 20.4], [24.0, 28.23], [18.9, 21.54], [35.4, 35.55], [15.2, 19.04], [26.5, 25.15], [43.5, 46.62], [21.2, 21.5], [18.4, 15.46], [28.5, 31.95], [23.9, 21.91], [18.5, 18.65], [25.0, 24.11], [35.4, 35.11], [31.5, 34.31], [20.2, 18.29], [24.1, 24.21], [20.0, 17.08], [13.1, 11.4], [24.8, 23.83], [30.8, 28.87], [12.7, 15.7], [20.0, 20.54], [23.7, 24.62], [10.8, 11.87], [20.6, 21.22], [20.8, 22.25], [5.0, 5.77], [20.1, 20.58], [48.5, 47.85], [10.9, 8.59], [7.0, 12.41], [20.9, 22.12], [17.2, 15.08], [20.9, 20.35], [9.7, 9.84], [19.4, 18.84], [29.0, 28.33], [16.4, 15.7], [25.0, 23.19], [25.0, 25.08], [17.1, 18.03], [23.2, 22.2], [10.4, 7.56], [19.6, 19.03], [17.2, 17.66], [27.5, 24.27], [23.0, 19.38], [50.0, 35.92], [17.9, 10.96], [9.6, 12.19], [17.2, 16.65], [22.5, 19.39], [21.4, 24.88]]}, {"model": "Random Forest", "requested": true, "note": "200 trees, each split sees 50% of features.", "test_rmse": 2.8914245378088514, "test_mae": 1.9897254901960761, "test_r2": 0.8859961194206265, "test_mape": 10.529235244299485, "train_rmse": 1.2727570664206758, "train_r2": 0.9813532050241917, "cv_rmse_mean": 3.5072562708991235, "cv_rmse_std": 0.7229111656047653, "fit_seconds": 0.1885886659999998, "predictions": [[23.6, 23.99], [32.4, 31.27], [13.6, 16.42], [22.8, 23.61], [16.1, 17.08], [20.0, 21.71], [17.8, 19.11], [14.0, 15.48], [19.6, 21.14], [16.8, 20.6], [21.5, 20.28], [18.9, 19.25], [7.0, 8.89], [21.2, 21.89], [18.5, 19.72], [29.8, 25.92], [18.8, 19.26], [10.2, 8.83], [50.0, 44.19], [14.1, 15.32], [25.2, 24.43], [29.1, 24.22], [12.7, 14.42], [22.4, 21.93], [14.2, 14.68], [13.8, 15.05], [20.3, 21.67], [14.9, 13.83], [21.7, 19.63], [18.3, 21.11], [23.1, 20.36], [23.8, 23.31], [15.0, 24.07], [20.8, 20.3], [19.1, 15.19], [19.4, 16.04], [34.7, 35.55], [19.5, 19.31], [24.4, 21.47], [23.4, 24.22], [19.7, 18.91], [28.2, 29.89], [50.0, 44.3], [17.4, 19.55], [22.6, 23.01], [15.1, 13.74], [13.1, 15.03], [24.2, 24.53], [19.9, 18.82], [24.0, 28.2], [18.9, 21.04], [35.4, 34.16], [15.2, 16.8], [26.5, 26.1], [43.5, 43.46], [21.2, 21.92], [18.4, 15.78], [28.5, 32.18], [23.9, 22.66], [18.5, 19.61], [25.0, 25.3], [35.4, 33.9], [31.5, 30.04], [20.2, 18.54], [24.1, 26.3], [20.0, 17.41], [13.1, 13.71], [24.8, 23.21], [30.8, 28.41], [12.7, 15.74], [20.0, 20.53], [23.7, 27.35], [10.8, 10.33], [20.6, 21.57], [20.8, 22.29], [5.0, 7.63], [20.1, 20.12], [48.5, 44.89], [10.9, 10.9], [7.0, 12.51], [20.9, 21.37], [17.2, 12.98], [20.9, 20.29], [9.7, 9.9], [19.4, 20.09], [29.0, 26.88], [16.4, 16.22], [25.0, 23.33], [25.0, 23.84], [17.1, 17.92], [23.2, 22.13], [10.4, 8.16], [19.6, 19.02], [17.2, 18.95], [27.5, 25.12], [23.0, 19.39], [50.0, 33.58], [17.9, 12.77], [9.6, 12.78], [17.2, 13.51], [22.5, 20.57], [21.4, 23.79]]}, {"model": "SVR (RBF kernel)", "requested": false, "note": "Extra: support-vector regression with an RBF kernel, C=20.", "test_rmse": 3.428986693317568, "test_mae": 2.031133445351869, "test_r2": 0.8396653051807839, "test_mape": 11.10967840169647, "train_rmse": 2.3414048210394185, "train_r2": 0.9368946502139147, "cv_rmse_mean": 3.8333943836650306, "cv_rmse_std": 1.0590360266792773, "fit_seconds": 0.009120333000000258, "predictions": [[23.6, 25.59], [32.4, 31.84], [13.6, 15.25], [22.8, 22.57], [16.1, 15.97], [20.0, 20.74], [17.8, 17.83], [14.0, 15.34], [19.6, 21.79], [16.8, 19.87], [21.5, 19.56], [18.9, 17.71], [7.0, 15.19], [21.2, 21.68], [18.5, 17.95], [29.8, 23.02], [18.8, 19.18], [10.2, 8.77], [50.0, 45.42], [14.1, 14.06], [25.2, 24.63], [29.1, 26.95], [12.7, 13.95], [22.4, 23.31], [14.2, 17.24], [13.8, 17.65], [20.3, 20.88], [14.9, 12.29], [21.7, 19.27], [18.3, 19.53], [23.1, 21.79], [23.8, 23.68], [15.0, 20.99], [20.8, 25.0], [19.1, 15.0], [19.4, 16.94], [34.7, 33.06], [19.5, 20.09], [24.4, 21.89], [23.4, 24.2], [19.7, 18.19], [28.2, 28.93], [50.0, 46.25], [17.4, 18.88], [22.6, 25.45], [15.1, 16.28], [13.1, 15.11], [24.2, 25.54], [19.9, 18.81], [24.0, 26.41], [18.9, 18.61], [35.4, 35.2], [15.2, 17.05], [26.5, 23.94], [43.5, 44.54], [21.2, 22.64], [18.4, 15.98], [28.5, 31.4], [23.9, 24.89], [18.5, 17.16], [25.0, 26.27], [35.4, 34.3], [31.5, 29.88], [20.2, 18.69], [24.1, 24.46], [20.0, 19.02], [13.1, 15.51], [24.8, 23.65], [30.8, 28.75], [12.7, 14.33], [20.0, 21.61], [23.7, 25.06], [10.8, 9.23], [20.6, 19.89], [20.8, 22.28], [5.0, 8.34], [20.1, 20.01], [48.5, 44.74], [10.9, 12.68], [7.0, 10.39], [20.9, 19.96], [17.2, 11.86], [20.9, 18.69], [9.7, 10.23], [19.4, 19.66], [29.0, 27.43], [16.4, 16.35], [25.0, 24.3], [25.0, 23.4], [17.1, 19.05], [23.2, 23.89], [10.4, 8.8], [19.6, 19.44], [17.2, 18.35], [27.5, 28.31], [23.0, 20.02], [50.0, 24.63], [17.9, 13.6], [9.6, 10.61], [17.2, 11.52], [22.5, 22.87], [21.4, 22.91]]}, {"model": "Neural Network (MLP)", "requested": true, "note": "2 hidden layers (64, 32), early stopping, standardized inputs and target.", "test_rmse": 3.4238489056323553, "test_mae": 2.1118802965120773, "test_r2": 0.8401454169768997, "test_mape": 10.933604110785353, "train_rmse": 1.665167678011848, "train_r2": 0.9680824823990211, "cv_rmse_mean": 3.936713297862146, "cv_rmse_std": 1.0948023121221506, "fit_seconds": 0.3292434169999998, "predictions": [[23.6, 28.4], [32.4, 32.99], [13.6, 15.73], [22.8, 24.06], [16.1, 16.0], [20.0, 18.02], [17.8, 17.58], [14.0, 15.2], [19.6, 21.9], [16.8, 19.21], [21.5, 20.51], [18.9, 20.65], [7.0, 5.41], [21.2, 20.7], [18.5, 17.26], [29.8, 21.12], [18.8, 19.56], [10.2, 10.79], [50.0, 48.03], [14.1, 13.2], [25.2, 24.47], [29.1, 27.16], [12.7, 13.04], [22.4, 22.7], [14.2, 18.21], [13.8, 16.65], [20.3, 22.5], [14.9, 11.81], [21.7, 20.78], [18.3, 18.29], [23.1, 25.78], [23.8, 22.99], [15.0, 20.07], [20.8, 27.23], [19.1, 16.23], [19.4, 16.51], [34.7, 33.85], [19.5, 19.64], [24.4, 21.6], [23.4, 24.84], [19.7, 18.06], [28.2, 31.43], [50.0, 52.51], [17.4, 19.39], [22.6, 25.53], [15.1, 15.32], [13.1, 15.64], [24.2, 25.48], [19.9, 19.66], [24.0, 26.31], [18.9, 22.7], [35.4, 34.85], [15.2, 18.05], [26.5, 23.49], [43.5, 44.92], [21.2, 21.92], [18.4, 14.78], [28.5, 33.53], [23.9, 24.22], [18.5, 15.95], [25.0, 26.57], [35.4, 36.16], [31.5, 30.43], [20.2, 19.65], [24.1, 25.13], [20.0, 19.07], [13.1, 15.12], [24.8, 22.88], [30.8, 29.96], [12.7, 14.13], [20.0, 21.28], [23.7, 24.23], [10.8, 9.61], [20.6, 21.11], [20.8, 22.3], [5.0, 5.3], [20.1, 20.41], [48.5, 50.12], [10.9, 11.82], [7.0, 15.29], [20.9, 20.93], [17.2, 13.5], [20.9, 19.27], [9.7, 11.55], [19.4, 19.86], [29.0, 27.5], [16.4, 16.75], [25.0, 23.99], [25.0, 24.02], [17.1, 19.14], [23.2, 24.54], [10.4, 8.54], [19.6, 18.84], [17.2, 17.46], [27.5, 35.05], [23.0, 19.19], [50.0, 27.73], [17.9, 8.97], [9.6, 10.03], [17.2, 13.88], [22.5, 21.94], [21.4, 22.5]]}, {"model": "Decision Tree", "requested": true, "note": "Single tree, max depth 5, at least 5 houses per leaf.", "test_rmse": 4.278191780653282, "test_mae": 2.9091826909376644, "test_r2": 0.750416191238419, "test_mape": 15.297560418308143, "train_rmse": 3.4489022756164163, "train_r2": 0.8630774623540253, "cv_rmse_mean": 4.610506185287841, "cv_rmse_std": 0.8344423882439974, "fit_seconds": 0.0018335840000001102, "predictions": [[23.6, 22.97], [32.4, 36.92], [13.6, 19.73], [22.8, 24.65], [16.1, 15.91], [20.0, 20.86], [17.8, 15.91], [14.0, 15.91], [19.6, 20.86], [16.8, 20.86], [21.5, 19.73], [18.9, 19.73], [7.0, 9.2], [21.2, 20.86], [18.5, 20.86], [29.8, 23.32], [18.8, 19.73], [10.2, 9.2], [50.0, 42.32], [14.1, 17.92], [25.2, 22.97], [29.1, 22.97], [12.7, 15.91], [22.4, 27.6], [14.2, 13.51], [13.8, 13.51], [20.3, 22.97], [14.9, 13.51], [21.7, 15.91], [18.3, 20.86], [23.1, 19.73], [23.8, 22.97], [15.0, 23.32], [20.8, 20.86], [19.1, 15.91], [19.4, 15.91], [34.7, 33.86], [19.5, 20.86], [24.4, 20.22], [23.4, 22.97], [19.7, 22.22], [28.2, 27.6], [50.0, 42.32], [17.4, 20.86], [22.6, 22.97], [15.1, 17.92], [13.1, 15.91], [24.2, 22.97], [19.9, 15.91], [24.0, 29.55], [18.9, 20.86], [35.4, 33.86], [15.2, 15.91], [26.5, 27.6], [43.5, 46.69], [21.2, 20.86], [18.4, 15.91], [28.5, 36.92], [23.9, 20.86], [18.5, 22.22], [25.0, 24.69], [35.4, 33.86], [31.5, 36.92], [20.2, 20.86], [24.1, 29.55], [20.0, 15.91], [13.1, 17.92], [24.8, 22.97], [30.8, 29.55], [12.7, 15.91], [20.0, 20.86], [23.7, 27.6], [10.8, 9.2], [20.6, 24.65], [20.8, 20.86], [5.0, 9.2], [20.1, 20.86], [48.5, 46.69], [10.9, 13.17], [7.0, 15.91], [20.9, 22.97], [17.2, 13.17], [20.9, 22.97], [9.7, 9.2], [19.4, 20.86], [29.0, 27.6], [16.4, 15.91], [25.0, 22.97], [25.0, 22.97], [17.1, 15.91], [23.2, 20.86], [10.4, 9.2], [19.6, 20.86], [17.2, 20.86], [27.5, 22.97], [23.0, 20.86], [50.0, 22.97], [17.9, 13.17], [9.6, 13.51], [17.2, 13.17], [22.5, 20.86], [21.4, 22.97]]}, {"model": "Linear Regression", "requested": true, "note": "Baseline. Straight-line fit on standardized features.", "test_rmse": 4.928602182665336, "test_mae": 3.1890919658878474, "test_r2": 0.668759493535632, "test_mape": 16.866394539378714, "train_rmse": 4.6520331848801675, "train_r2": 0.7508856358979672, "cv_rmse_mean": 4.866279636267079, "cv_rmse_std": 0.7985653069998927, "fit_seconds": 0.0011848749999998631, "predictions": [[23.6, 29.0], [32.4, 36.03], [13.6, 14.82], [22.8, 25.03], [16.1, 18.77], [20.0, 23.25], [17.8, 17.66], [14.0, 14.34], [19.6, 23.01], [16.8, 20.63], [21.5, 24.91], [18.9, 18.64], [7.0, -6.09], [21.2, 21.76], [18.5, 19.24], [29.8, 26.19], [18.8, 20.65], [10.2, 5.79], [50.0, 40.5], [14.1, 17.61], [25.2, 27.25], [29.1, 30.07], [12.7, 11.34], [22.4, 24.16], [14.2, 17.86], [13.8, 15.84], [20.3, 22.78], [14.9, 14.58], [21.7, 22.44], [18.3, 19.2], [23.1, 22.43], [23.8, 25.22], [15.0, 25.94], [20.8, 17.7], [19.1, 16.77], [19.4, 16.95], [34.7, 31.23], [19.5, 20.13], [24.4, 23.77], [23.4, 24.63], [19.7, 13.94], [28.2, 32.26], [50.0, 42.67], [17.4, 17.33], [22.6, 27.28], [15.1, 16.99], [13.1, 14.07], [24.2, 25.9], [19.9, 20.29], [24.0, 29.95], [18.9, 21.29], [35.4, 34.34], [15.2, 16.05], [26.5, 26.23], [43.5, 39.54], [21.2, 22.58], [18.4, 18.85], [28.5, 32.73], [23.9, 25.07], [18.5, 12.89], [25.0, 22.68], [35.4, 30.48], [31.5, 31.53], [20.2, 15.9], [24.1, 20.22], [20.0, 16.71], [13.1, 20.52], [24.8, 25.96], [30.8, 30.62], [12.7, 11.6], [20.0, 20.51], [23.7, 27.48], [10.8, 11.02], [20.6, 15.68], [20.8, 23.79], [5.0, 6.2], [20.1, 21.6], [48.5, 41.41], [10.9, 18.77], [7.0, 8.88], [20.9, 20.83], [17.2, 13.26], [20.9, 20.74], [9.7, 9.36], [19.4, 23.22], [29.0, 31.92], [16.4, 19.1], [25.0, 25.52], [25.0, 29.04], [17.1, 20.14], [23.2, 25.59], [10.4, 5.7], [19.6, 20.09], [17.2, 14.95], [27.5, 12.5], [23.0, 20.73], [50.0, 24.74], [17.9, -0.16], [9.6, 13.68], [17.2, 16.18], [22.5, 22.28], [21.4, 24.48]]}], "importance": [{"feature": "LSTAT", "description": "% lower-status population", "mean": 4.006392237139446, "std": 0.4572022008292226}, {"feature": "RM", "description": "Average rooms per dwelling", "mean": 3.1133033972551383, "std": 0.22598657608361952}, {"feature": "DIS", "description": "Distance to employment centres", "mean": 1.322696007227526, "std": 0.2944508638847078}, {"feature": "NOX", "description": "Nitric oxide concentration", "mean": 0.7438188342510468, "std": 0.11398829449236307}, {"feature": "CRIM", "description": "Per-capita crime rate", "mean": 0.6504622084569377, "std": 0.13247562777183924}, {"feature": "AGE", "description": "Share of units built before 1940", "mean": 0.55009781901229, "std": 0.0983927178747565}, {"feature": "PTRATIO", "description": "Pupil-teacher ratio", "mean": 0.3742437050213957, "std": 0.06815189187171715}, {"feature": "B", "description": "Demographic index (1000(Bk - 0.63)^2)", "mean": 0.15235857967779898, "std": 0.05219899445587219}, {"feature": "TAX", "description": "Property-tax rate per $10k", "mean": 0.12905486593826618, "std": 0.05169554160049686}, {"feature": "RAD", "description": "Highway accessibility index", "mean": 0.07306516258947107, "std": 0.025802997216264723}, {"feature": "INDUS", "description": "Share of non-retail business acres", "mean": 0.059717275227933395, "std": 0.02639496772817599}, {"feature": "ZN", "description": "Share of residential land zoned for large lots", "mean": 0.03098268836361582, "std": 0.012710708031632626}, {"feature": "CHAS", "description": "Borders the Charles River (1/0)", "mean": 0.0002457651756090806, "std": 0.012874693282302804}]};
+const R = DATA.results;
+const NS = "http://www.w3.org/2000/svg";
+const fmt = (v, d = 2) => v.toFixed(d);
+
+function el(tag, attrs = {}, parent) {
+  const n = document.createElementNS(NS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(n);
+  return n;
+}
+function text(parent, x, y, s, attrs = {}) {
+  const t = el("text", { x, y, ...attrs }, parent);
+  t.textContent = s;
+  return t;
+}
+function niceTicks(max, count = 5) {
+  const raw = max / count, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => s >= raw);
+  const out = [];
+  for (let v = 0; v < max + step - 1e-9; v += step) out.push(+v.toFixed(6));
+  return out;
+}
+// Horizontal bar: rounded data-end, square at the baseline
+function hbarPath(x0, y, w, h, r = 4) {
+  r = Math.min(r, w, h / 2);
+  return `M${x0},${y} H${x0 + w - r} Q${x0 + w},${y} ${x0 + w},${y + r} V${y + h - r} Q${x0 + w},${y + h} ${x0 + w - r},${y + h} H${x0} Z`;
+}
+
+const tip = document.getElementById("tip");
+function showTip(e, html) {
+  tip.innerHTML = html;
+  tip.style.opacity = 1;
+  const pad = 14, w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = e.clientX + pad, y = e.clientY + pad;
+  if (x + w > innerWidth - 8) x = e.clientX - w - pad;
+  if (y + h > innerHeight - 8) y = e.clientY - h - pad;
+  tip.style.left = x + "px"; tip.style.top = y + "px";
+}
+function hideTip() { tip.style.opacity = 0; }
+function bindTip(node, html) {
+  node.addEventListener("mousemove", e => showTip(e, html));
+  node.addEventListener("mouseleave", hideTip);
+}
+const tipRow = (k, v) => `<div class="r">${k}: <b style="color:var(--ink)">${v}</b></div>`;
+
+// ---------- Header & tiles ----------
+const best = R[0], d = DATA.dataset;
+const lin = R.find(r => r.model === "Linear Regression");
+R.forEach(r => r.gap = r.train_r2 - r.test_r2);
+document.getElementById("lede").textContent =
+  `${R.length} regression models trained on the Boston Housing dataset (${d.rows} neighbourhoods, ${d.features} features) ` +
+  `to predict the median home value (MEDV, in $1000s; range ${d.target_min}–${d.target_max}, mean ${fmt(d.target_mean, 1)}). ` +
+  `${d.train_rows} houses used for training, ${d.test_rows} held out for testing. All models are intentionally small; ` +
+  `the slowest trains in ${fmt(Math.max(...R.map(r => r.fit_seconds)), 1)} s.`;
+
+const improvement = (1 - best.test_rmse / DATA.baseline_rmse) * 100;
+const tiles = [
+  { label: "Best model", value: best.model, foot: "Ranked by cross-validated RMSE", small: true },
+  { label: "Test RMSE", value: "$" + fmt(best.test_rmse) + "k", foot: `${fmt(improvement, 0)}% lower than naive baseline ($${fmt(DATA.baseline_rmse)}k)`, good: true },
+  { label: "Test R²", value: fmt(best.test_r2, 3), foot: `Linear regression: ${fmt(lin.test_r2, 3)}` },
+  { label: "Test MAE", value: "$" + fmt(best.test_mae) + "k", foot: `Avg miss ≈ ${fmt(best.test_mape, 1)}% of price` },
+];
+document.getElementById("tiles").innerHTML = tiles.map(t => `
+  <div class="tile"><div class="label">${t.label}</div>
+  <div class="value" ${t.small ? 'style="font-size:22px;padding-top:6px"' : ""}>${t.value}</div>
+  <div class="foot${t.good ? " good" : ""}">${t.foot}</div></div>`).join("");
+
+// ---------- Ranking bar chart ----------
+(function rank() {
+  const W = 1000, rowH = 38, top = 8, left = 200, right = 90, H = top + R.length * rowH + 30;
+  const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Bar chart of cross-validated RMSE by model" });
+  const maxV = Math.max(DATA.baseline_rmse, ...R.map(r => r.cv_rmse_mean + r.cv_rmse_std)) * 1.05;
+  const ticks = niceTicks(maxV);
+  const xMax = ticks[ticks.length - 1], plotW = W - left - right;
+  const x = v => left + v / xMax * plotW;
+  const plotB = top + R.length * rowH;
+  ticks.forEach(t => {
+    el("line", { x1: x(t), x2: x(t), y1: top, y2: plotB, class: t === 0 ? "axis" : "grid" }, svg);
+    text(svg, x(t), plotB + 18, t, { "text-anchor": "middle" });
+  });
+  R.forEach((r, i) => {
+    const y = top + i * rowH, bh = 22, by = y + (rowH - bh) / 2, cy = y + rowH / 2;
+    const lab = text(svg, left - 12, cy + 4, r.model, { "text-anchor": "end", class: "lbl" });
+    if (i === 0) lab.setAttribute("font-weight", "600");
+    el("path", { d: hbarPath(x(0), by, x(r.cv_rmse_mean) - x(0), bh), fill: "var(--s1)" }, svg);
+    const lo = x(r.cv_rmse_mean - r.cv_rmse_std), hi = x(r.cv_rmse_mean + r.cv_rmse_std);
+    el("line", { x1: lo, x2: hi, y1: cy, y2: cy, stroke: "var(--ink-2)", "stroke-width": 1.5 }, svg);
+    [lo, hi].forEach(px => el("line", { x1: px, x2: px, y1: cy - 5, y2: cy + 5, stroke: "var(--ink-2)", "stroke-width": 1.5 }, svg));
+    text(svg, hi + 8, cy + 4, fmt(r.cv_rmse_mean), { class: "val" });
+    const hit = el("rect", { x: 0, y, width: W, height: rowH, class: "hit" }, svg);
+    bindTip(hit, `<div class="t">${r.model}</div>` + tipRow("CV RMSE", `${fmt(r.cv_rmse_mean)} ± ${fmt(r.cv_rmse_std)}`) +
+      tipRow("Test RMSE", fmt(r.test_rmse)) + tipRow("Test R²", fmt(r.test_r2, 3)) +
+      `<div class="r" style="margin-top:4px">${r.note}</div>`);
+  });
+  const bx = x(DATA.baseline_rmse);
+  el("line", { x1: bx, x2: bx, y1: top - 4, y2: plotB, stroke: "var(--muted)", "stroke-width": 1.5, "stroke-dasharray": "4 4" }, svg);
+  text(svg, bx - 6, plotB - 8, `baseline ${fmt(DATA.baseline_rmse)}`, { "text-anchor": "end" });
+  text(svg, left + plotW / 2, H, "RMSE ($1000s)", { "text-anchor": "middle" });
+  document.getElementById("rank").appendChild(svg);
+})();
+
+// ---------- KPI table ----------
+(function table() {
+  const cols = [
+    { k: "model", h: "Model", f: r => r.model + (r.requested ? "" : '<span class="tag">extra</span>') },
+    { k: "cv_rmse_mean", h: "CV RMSE", f: r => `${fmt(r.cv_rmse_mean)} <span style="color:var(--muted)">± ${fmt(r.cv_rmse_std)}</span>`, low: true },
+    { k: "test_rmse", h: "Test RMSE", low: true },
+    { k: "test_mae", h: "Test MAE", low: true },
+    { k: "test_r2", h: "Test R²", d: 3 },
+    { k: "test_mape", h: "Test MAPE", f: r => fmt(r.test_mape, 1) + "%", low: true },
+    { k: "train_r2", h: "Train R²", d: 3, nobest: true },
+    { k: "gap", h: "Overfit gap", d: 3, low: true },
+    { k: "fit_seconds", h: "Fit time (s)", d: 2, low: true },
+  ];
+  const bestVal = {};
+  cols.slice(1).forEach(c => {
+    if (c.nobest) return;
+    const vals = R.map(r => r[c.k]);
+    bestVal[c.k] = c.low ? Math.min(...vals) : Math.max(...vals);
+  });
+  let sortKey = "cv_rmse_mean", asc = true;
+  const tbl = document.getElementById("kpi");
+  function render() {
+    const rows = [...R].sort((a, b) => {
+      const av = a[sortKey], bv = b[sortKey];
+      return (typeof av === "string" ? av.localeCompare(bv) : av - bv) * (asc ? 1 : -1);
+    });
+    tbl.innerHTML = "<thead><tr>" + cols.map(c =>
+      `<th data-k="${c.k}">${c.h}${c.k === sortKey ? (asc ? " ▲" : " ▼") : ""}</th>`).join("") + "</tr></thead><tbody>" +
+      rows.map(r => "<tr>" + cols.map(c => {
+        const v = c.f ? c.f(r) : fmt(r[c.k], c.d ?? 2);
+        const isBest = c.k in bestVal && r[c.k] === bestVal[c.k];
+        return `<td class="${isBest ? "best" : ""}">${v}</td>`;
+      }).join("") + "</tr>").join("") + "</tbody>";
+    tbl.querySelectorAll("th").forEach(th => th.onclick = () => {
+      const k = th.dataset.k;
+      asc = sortKey === k ? !asc : !(k === "test_r2" || k === "train_r2");
+      sortKey = k; render();
+    });
+  }
+  render();
+})();
+
+// ---------- Train vs test R² dumbbell ----------
+(function gap() {
+  const W = 1000, rowH = 34, top = 8, left = 200, right = 30, H = top + R.length * rowH + 30;
+  const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Train versus test R squared per model" });
+  const lo = Math.max(0, Math.floor(Math.min(...R.map(r => r.test_r2)) * 10) / 10 - 0.1), hi = 1;
+  const plotW = W - left - right, x = v => left + (v - lo) / (hi - lo) * plotW;
+  const plotB = top + R.length * rowH;
+  for (let t = lo; t <= hi + 1e-9; t += 0.1) {
+    el("line", { x1: x(t), x2: x(t), y1: top, y2: plotB, class: "grid" }, svg);
+    text(svg, x(t), plotB + 18, t.toFixed(1), { "text-anchor": "middle" });
+  }
+  R.forEach((r, i) => {
+    const cy = top + i * rowH + rowH / 2;
+    text(svg, left - 12, cy + 4, r.model, { "text-anchor": "end", class: "lbl" });
+    el("line", { x1: x(r.test_r2), x2: x(r.train_r2), y1: cy, y2: cy, stroke: "var(--axis)", "stroke-width": 2 }, svg);
+    el("circle", { cx: x(r.train_r2), cy, r: 6, fill: "var(--s1)", stroke: "var(--surface)", "stroke-width": 2 }, svg);
+    el("circle", { cx: x(r.test_r2), cy, r: 6, fill: "var(--s2)", stroke: "var(--surface)", "stroke-width": 2 }, svg);
+    const hit = el("rect", { x: 0, y: cy - rowH / 2, width: W, height: rowH, class: "hit" }, svg);
+    bindTip(hit, `<div class="t">${r.model}</div>` + tipRow("Train R²", fmt(r.train_r2, 3)) +
+      tipRow("Test R²", fmt(r.test_r2, 3)) + tipRow("Gap", fmt(r.gap, 3)));
+  });
+  text(svg, left + plotW / 2, H, "R²", { "text-anchor": "middle" });
+  document.getElementById("gap").appendChild(svg);
+})();
+
+// ---------- Predicted vs actual small multiples ----------
+(function scatter() {
+  const wrap = document.getElementById("scatter");
+  const all = R.flatMap(r => r.predictions.flat());
+  const lo = 0, hi = Math.ceil(Math.max(...all) / 10) * 10;
+  const S = 260, m = { l: 32, r: 8, t: 8, b: 26 }, pw = S - m.l - m.r, ph = S - m.t - m.b;
+  const sx = v => m.l + (v - lo) / (hi - lo) * pw, sy = v => m.t + ph - (v - lo) / (hi - lo) * ph;
+  R.forEach(r => {
+    const fig = document.createElement("figure");
+    fig.innerHTML = `<figcaption><b>${r.model}</b> · RMSE ${fmt(r.test_rmse)} · R² ${fmt(r.test_r2, 3)}</figcaption>`;
+    const svg = el("svg", { viewBox: `0 0 ${S} ${S}`, role: "img", "aria-label": `${r.model} predicted versus actual` });
+    for (let t = lo; t <= hi; t += 10) {
+      el("line", { x1: sx(t), x2: sx(t), y1: m.t, y2: m.t + ph, class: "grid" }, svg);
+      el("line", { x1: m.l, x2: m.l + pw, y1: sy(t), y2: sy(t), class: "grid" }, svg);
+      text(svg, sx(t), S - 10, t, { "text-anchor": "middle", "font-size": 10 });
+      text(svg, m.l - 5, sy(t) + 3, t, { "text-anchor": "end", "font-size": 10 });
+    }
+    el("line", { x1: sx(lo), y1: sy(lo), x2: sx(hi), y2: sy(hi), stroke: "var(--muted)", "stroke-width": 1, "stroke-dasharray": "4 4" }, svg);
+    r.predictions.forEach(([a, p]) => {
+      el("circle", { cx: sx(a), cy: sy(p), r: 4, fill: "var(--s1)", "fill-opacity": 0.75, stroke: "var(--surface)", "stroke-width": 1.5 }, svg);
+      const hit = el("circle", { cx: sx(a), cy: sy(p), r: 8, class: "hit" }, svg);
+      bindTip(hit, `<div class="t">${r.model}</div>` + tipRow("Actual", "$" + fmt(a, 1) + "k") +
+        tipRow("Predicted", "$" + fmt(p, 1) + "k") + tipRow("Error", (p - a >= 0 ? "+" : "") + fmt(p - a, 1) + "k"));
+    });
+    fig.appendChild(svg);
+    wrap.appendChild(fig);
+  });
+})();
+
+// ---------- Feature importance ----------
+(function imp() {
+  document.getElementById("imp-title").textContent = `What drives the price? (${DATA.best_model})`;
+  const I = DATA.importance;
+  const W = 1000, rowH = 30, top = 4, left = 330, right = 70, H = top + I.length * rowH + 30;
+  const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Permutation feature importance" });
+  const maxV = Math.max(...I.map(f => f.mean)) * 1.05;
+  const ticks = niceTicks(maxV), xMax = ticks[ticks.length - 1], plotW = W - left - right;
+  const x = v => left + Math.max(0, v) / xMax * plotW, plotB = top + I.length * rowH;
+  ticks.forEach(t => {
+    el("line", { x1: x(t), x2: x(t), y1: top, y2: plotB, class: t === 0 ? "axis" : "grid" }, svg);
+    text(svg, x(t), plotB + 18, t, { "text-anchor": "middle" });
+  });
+  I.forEach((f, i) => {
+    const y = top + i * rowH, bh = 18, cy = y + rowH / 2;
+    text(svg, left - 12, cy + 4, `${f.feature} · ${f.description}`, { "text-anchor": "end", class: "lbl" });
+    const w = x(f.mean) - x(0);
+    if (w > 0.5) el("path", { d: hbarPath(x(0), cy - bh / 2, w, bh), fill: "var(--s1)" }, svg);
+    text(svg, x(f.mean) + 8, cy + 4, fmt(Math.max(f.mean, 0)), { class: "val" });
+    const hit = el("rect", { x: 0, y, width: W, height: rowH, class: "hit" }, svg);
+    bindTip(hit, `<div class="t">${f.feature}</div><div class="r">${f.description}</div>` +
+      tipRow("RMSE increase when shuffled", `${fmt(f.mean)} ± ${fmt(f.std)}`));
+  });
+  text(svg, left + plotW / 2, H, "Increase in test RMSE ($1000s)", { "text-anchor": "middle" });
+  document.getElementById("imp").appendChild(svg);
+})();
+
+// ---------- Takeaways ----------
+(function findings() {
+  const top2 = DATA.importance.slice(0, 2).map(f => `<b>${f.feature}</b> (${f.description.toLowerCase()})`);
+  const mostOverfit = [...R].sort((a, b) => b.gap - a.gap)[0];
+  const items = [
+    `<b>${best.model} is the best model</b>: CV RMSE ${fmt(best.cv_rmse_mean)} and test RMSE ${fmt(best.test_rmse)}, so predictions are typically off by about $${Math.round(best.test_rmse * 1000).toLocaleString()} on a mean price of $${Math.round(d.target_mean * 1000).toLocaleString()}.`,
+    `<b>Tree ensembles dominate.</b> XGBoost, LightGBM, Random Forest and the stacking ensemble form the top group; their CV error bars overlap, so the differences between them are small relative to fold-to-fold noise.`,
+    `<b>Linear regression is the weakest</b> (test R² ${fmt(lin.test_r2, 3)}) because price relates non-linearly to rooms and % lower-status population. It still clearly beats the naive baseline and is the easiest model to explain.`,
+    `<b>The neural network and SVR land in the middle.</b> With only ${d.train_rows} training houses, there is not enough data for a neural net to beat boosted trees.`,
+    `<b>${mostOverfit.model} has the largest overfit gap</b> (${fmt(mostOverfit.gap, 3)}). A gap is acceptable as long as test error stays low, which is the case for the tree ensembles.`,
+    `<b>Top drivers:</b> ${top2.join(" and ")} matter far more than any other feature.`,
+    `<b>Caveats:</b> the test set is only ${d.test_rows} houses, so single-split numbers are noisy (that is why ranking uses CV). ${d.capped_at_50} houses are capped at $50k in the source data. Hyperparameters were set by hand, not tuned. Feature B encodes a racial demographic proxy and should be dropped for any real-world use.`,
+  ];
+  document.getElementById("findings").innerHTML = items.map(i => `<li>${i}</li>`).join("");
+})();
+</script>
+</body>
+</html>

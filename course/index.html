@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EDA Crash Course</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="layout">
+  <nav class="sidebar" aria-label="Lessons">
+    <h1>EDA Crash Course</h1>
+    <p class="sub">Exploratory Data Analysis, taught on the Boston Housing data</p>
+    <ol class="toc">
+      <li><a href="#what">What is EDA?</a></li>
+      <li><a href="#meet">Meet the data</a></li>
+      <li><a href="#quality">Check data quality</a></li>
+      <li><a href="#univariate">One variable at a time</a></li>
+      <li><a href="#bivariate">Relationships</a></li>
+      <li><a href="#workflow">Your EDA workflow</a></li>
+      <li><a href="#quiz">Quiz</a></li>
+    </ol>
+    <div class="progress"><div></div></div>
+    <p class="progress-label">0 of 7 lessons visited</p>
+    <button class="theme-btn" type="button">☾ Dark mode</button>
+  </nav>
+
+  <main>
+    <!-- 1 ----------------------------------------------------------------->
+    <section class="lesson" id="what">
+      <p class="eyebrow">Lesson 1</p>
+      <h2>What is Exploratory Data Analysis?</h2>
+      <p><strong>Exploratory Data Analysis (EDA)</strong> is the first conversation you have with a dataset. Before you build a model or draw any conclusion, you look at the data: what's in it, what's broken, what's weird, and what seems related to what.</p>
+      <p>The term comes from statistician John Tukey (1977), who argued that you should <em>explore</em> data with an open mind before you <em>confirm</em> any hypothesis with formal tests.</p>
+
+      <div class="callout"><p><strong>In one sentence:</strong> EDA is using summary statistics and charts to understand a dataset's structure, quality, and patterns — so you can ask better questions and avoid building on bad data.</p></div>
+
+      <h3>Why bother?</h3>
+      <div class="cards">
+        <div class="card"><h4>Catch problems early</h4><p>Missing values, typos, duplicates, and impossible numbers break models silently.</p></div>
+        <div class="card"><h4>Understand shape</h4><p>Is a variable symmetric or skewed? Are there outliers? That changes which methods you can use.</p></div>
+        <div class="card"><h4>Find signal</h4><p>Which features move together with the thing you care about? That guides feature selection.</p></div>
+        <div class="card"><h4>Form hypotheses</h4><p>EDA generates questions; later analysis tests them.</p></div>
+      </div>
+
+      <h3>The four big questions</h3>
+      <ol>
+        <li><strong>What do I have?</strong> Rows, columns, types, meaning.</li>
+        <li><strong>Can I trust it?</strong> Missing, duplicated, capped or impossible values.</li>
+        <li><strong>What does each variable look like?</strong> Centre, spread, shape, outliers.</li>
+        <li><strong>How do variables relate?</strong> Correlations, group differences, redundancy.</li>
+      </ol>
+      <p>The rest of this course walks through each one using the <code>housing.csv</code> file in this project.</p>
+      <a class="next" href="#meet">Next: Meet the data →</a>
+    </section>
+
+    <!-- 2 ----------------------------------------------------------------->
+    <section class="lesson" id="meet">
+      <p class="eyebrow">Lesson 2</p>
+      <h2>Meet the data</h2>
+      <p>Always start by loading the file and looking at the raw rows. Our file has <strong>no header row</strong> and is <strong>separated by spaces</strong>, not commas — the first thing EDA taught us, before any statistics.</p>
+<pre><code>import pandas as pd
+
+cols = ["CRIM","ZN","INDUS","CHAS","NOX","RM","AGE",
+        "DIS","RAD","TAX","PTRATIO","B","LSTAT","MEDV"]
+df = pd.read_csv("Data/housing.csv", sep=r"\s+", header=None, names=cols)
+
+df.shape     # (506, 14)
+df.head()    # first 5 rows
+df.dtypes    # all float64 here
+</code></pre>
+
+      <div class="cards">
+        <div class="card"><p class="k">Rows</p><p class="v">506</p><p class="d">Census tracts around Boston, 1970s</p></div>
+        <div class="card"><p class="k">Columns</p><p class="v">14</p><p class="d">13 features + 1 target</p></div>
+        <div class="card"><p class="k">Target</p><p class="v">MEDV</p><p class="d">Median home value in $1000s</p></div>
+      </div>
+
+      <h3><code>df.head()</code></h3>
+      <div class="table-wrap"><table id="head-table"></table></div>
+
+      <h3>Data dictionary</h3>
+      <p>Numbers are meaningless until you know what each column measures. Build (or find) a dictionary like this one:</p>
+      <div class="table-wrap"><table id="dict-table"></table></div>
+      <div class="callout"><p><strong>Notice:</strong> everything is stored as a number, but not everything is a <em>quantity</em>. <code>CHAS</code> is a yes/no flag and <code>RAD</code> is an index. Averaging them doesn't mean much — knowing the type tells you which charts and stats make sense.</p></div>
+      <a class="next" href="#quality">Next: Check data quality →</a>
+    </section>
+
+    <!-- 3 ----------------------------------------------------------------->
+    <section class="lesson" id="quality">
+      <p class="eyebrow">Lesson 3</p>
+      <h2>Check data quality</h2>
+      <p>Before you trust any pattern, check whether the data itself is trustworthy.</p>
+<pre><code>df.isna().sum()          # missing values per column
+df.duplicated().sum()    # fully duplicated rows
+df.describe().T          # summary stats per column
+</code></pre>
+      <div class="cards">
+        <div class="card"><p class="k">Missing values</p><p class="v" id="missing-count">–</p><p class="d">Clean — rare in real life</p></div>
+        <div class="card"><p class="k">Duplicate rows</p><p class="v" id="dupe-count">–</p><p class="d">Every tract is unique</p></div>
+        <div class="card"><p class="k">MEDV exactly = 50</p><p class="v" id="capped-count">–</p><p class="d">Suspicious pile-up at the max</p></div>
+      </div>
+
+      <h3>Reading <code>describe()</code></h3>
+      <div class="table-wrap"><table id="describe-table"></table></div>
+      <p>How to read this table like an analyst:</p>
+      <ul>
+        <li><strong>Mean vs. median (50%)</strong> — if they're far apart, the variable is skewed. <code>CRIM</code> has mean 3.61 but median 0.26: a few tracts with very high crime drag the mean up.</li>
+        <li><strong>Max vs. 75%</strong> — a huge jump hints at outliers. <code>CRIM</code> goes from 3.68 to 88.98.</li>
+        <li><strong>Quartiles stuck at one value</strong> — <code>ZN</code> is 0 up to the median, so most tracts have no large-lot zoning. That's really a "mostly zero" variable.</li>
+        <li><strong>Suspicious limits</strong> — <code>MEDV</code> maxes out at exactly 50.0, shared by 16 tracts. The original survey <em>capped</em> values at $50k, so the true prices are unknown (they're "censored").</li>
+      </ul>
+
+      <div class="callout warn"><p><strong>Question the columns, not just the values.</strong> Column <code>B</code> is computed from the share of Black residents in each town. Using it to predict house prices bakes racial bias into a model. EDA is where you notice this and decide — together with domain experts — whether a feature should be used at all. (This is why scikit-learn removed this dataset in 2022.)</p></div>
+      <a class="next" href="#univariate">Next: One variable at a time →</a>
+    </section>
+
+    <!-- 4 ----------------------------------------------------------------->
+    <section class="lesson" id="univariate">
+      <p class="eyebrow">Lesson 4</p>
+      <h2>One variable at a time</h2>
+      <p><strong>Univariate analysis</strong> looks at the distribution of a single column: where its centre is, how spread out it is, its <em>shape</em>, and whether there are outliers. The histogram is your main tool.</p>
+
+      <div class="figure" id="fig-hist">
+        <p class="figure-title">Distribution</p>
+        <p class="figure-sub"></p>
+        <div class="controls" role="group" aria-label="Choose column">
+          <button class="chip" data-col="MEDV">MEDV</button>
+          <button class="chip" data-col="CRIM">CRIM</button>
+          <button class="chip" data-col="RM">RM</button>
+          <button class="chip" data-col="LSTAT">LSTAT</button>
+        </div>
+        <svg role="img" aria-label="Histogram"></svg>
+      </div>
+      <p id="hist-note"></p>
+
+      <h3>Shapes to recognise</h3>
+      <div class="cards">
+        <div class="card"><h4>Symmetric</h4><p>Mean ≈ median. Example: <code>RM</code>.</p></div>
+        <div class="card"><h4>Right-skewed</h4><p>Long tail to the right; mean &gt; median. Example: <code>CRIM</code>, <code>LSTAT</code>.</p></div>
+        <div class="card"><h4>Capped / censored</h4><p>Spike at a limit. Example: <code>MEDV</code> at 50.</p></div>
+        <div class="card"><h4>Mostly zero</h4><p>Example: <code>ZN</code>. Often better treated as "zero vs. non-zero".</p></div>
+      </div>
+
+      <h3>Outliers with the box plot</h3>
+      <p>A box plot summarises the same distribution in five numbers. The box spans the middle 50% of data (Q1 to Q3); the line inside is the median. The <strong>1.5 × IQR rule</strong> flags anything far outside the box as a potential outlier.</p>
+      <div class="figure" id="fig-box">
+        <p class="figure-title">MEDV box plot</p>
+        <p class="figure-sub">Hover the box or the red points</p>
+        <svg role="img" aria-label="Box plot of MEDV"></svg>
+      </div>
+      <p>For <code>MEDV</code>: Q1 = <span id="box-q1"></span>, Q3 = <span id="box-q3"></span>, so IQR = <span id="box-iqr"></span>. Anything below <span id="box-lo"></span> or above <span id="box-hi"></span> is flagged — that's <strong><span id="box-n"></span> tracts</strong>.</p>
+      <div class="callout"><p><strong>An outlier is a question, not a verdict.</strong> Ask: is it an error (typo, wrong unit)? A cap (like MEDV = 50)? Or a real, rare case (a very wealthy neighbourhood)? Only delete data you can show is wrong.</p></div>
+      <a class="next" href="#bivariate">Next: Relationships →</a>
+    </section>
+
+    <!-- 5 ----------------------------------------------------------------->
+    <section class="lesson" id="bivariate">
+      <p class="eyebrow">Lesson 5</p>
+      <h2>Relationships between variables</h2>
+      <p><strong>Bivariate analysis</strong> asks how two variables move together. For two numeric columns, use a <strong>scatter plot</strong>; to summarise the strength of a straight-line relationship, use the <strong>Pearson correlation <em>r</em></strong>, which runs from −1 (perfect negative) through 0 (none) to +1 (perfect positive).</p>
+
+      <div class="figure" id="fig-scatter">
+        <p class="figure-title">Scatter</p>
+        <p class="figure-sub"></p>
+        <div class="controls" role="group" aria-label="Choose x variable">
+          <button class="chip" data-col="RM">RM (rooms)</button>
+          <button class="chip" data-col="LSTAT">LSTAT</button>
+          <button class="chip" data-col="PTRATIO">PTRATIO</button>
+          <button class="chip" data-col="NOX">NOX</button>
+        </div>
+        <svg role="img" aria-label="Scatter plot against MEDV"></svg>
+      </div>
+      <ul>
+        <li><strong>RM:</strong> more rooms → higher value (r ≈ +0.70). Mostly linear.</li>
+        <li><strong>LSTAT:</strong> higher share of lower-status residents → lower value (r ≈ −0.74). The cloud is <em>curved</em> — a straight line under-fits both ends. A scatter shows this; <em>r</em> alone wouldn't.</li>
+        <li>The red points along the top are the capped $50k homes — they visibly flatten the pattern.</li>
+      </ul>
+
+      <h3>All features vs. the target at once</h3>
+      <div class="figure" id="fig-corr">
+        <p class="figure-title">Correlation with MEDV</p>
+        <p class="figure-sub">Blue = moves with price · red = moves against price</p>
+        <svg role="img" aria-label="Correlation of each feature with MEDV"></svg>
+      </div>
+<pre><code>df.corr()["MEDV"].sort_values()   # the numbers behind this chart
+</code></pre>
+
+      <h3>Comparing groups</h3>
+      <p>For a category vs. a number, compare the groups. Tracts on the Charles River (<span id="river-n"></span> of 506) average <strong id="river-yes"></strong> vs. <strong id="river-no"></strong> elsewhere.</p>
+<pre><code>df.groupby("CHAS")["MEDV"].agg(["count", "mean", "median"])
+</code></pre>
+
+      <h3>Watch out for</h3>
+      <div class="cards">
+        <div class="card"><h4>Correlation ≠ causation</h4><p>Adding rooms to a house doesn't automatically raise its value by r. Bigger homes cluster in wealthier areas.</p></div>
+        <div class="card"><h4>Redundant features</h4><p><code>RAD</code> and <code>TAX</code> correlate at r = <span id="radtax"></span>. They carry almost the same information (multicollinearity).</p></div>
+        <div class="card"><h4>Non-linear patterns</h4><p><em>r</em> only measures straight lines. Always look at the scatter.</p></div>
+      </div>
+      <a class="next" href="#workflow">Next: Your EDA workflow →</a>
+    </section>
+
+    <!-- 6 ----------------------------------------------------------------->
+    <section class="lesson" id="workflow">
+      <p class="eyebrow">Lesson 6</p>
+      <h2>Your EDA workflow</h2>
+      <p>Here's the whole process in one script you can run on <code>housing.csv</code> (needs <code>pandas</code>, <code>matplotlib</code>, <code>seaborn</code>):</p>
+<pre><code>import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+cols = ["CRIM","ZN","INDUS","CHAS","NOX","RM","AGE",
+        "DIS","RAD","TAX","PTRATIO","B","LSTAT","MEDV"]
+df = pd.read_csv("Data/housing.csv", sep=r"\s+", header=None, names=cols)
+
+# 1. What do I have?
+print(df.shape); print(df.dtypes); print(df.head())
+
+# 2. Can I trust it?
+print(df.isna().sum()); print(df.duplicated().sum())
+print(df.describe().T)
+print((df["MEDV"] == 50).sum(), "capped targets")
+
+# 3. One variable at a time
+df.hist(bins=30, figsize=(14, 10)); plt.tight_layout(); plt.show()
+sns.boxplot(x=df["MEDV"]); plt.show()
+
+# 4. Relationships
+print(df.corr()["MEDV"].sort_values())
+sns.heatmap(df.corr(), cmap="RdBu_r", center=0, annot=True, fmt=".2f")
+plt.show()
+sns.scatterplot(data=df, x="LSTAT", y="MEDV"); plt.show()
+print(df.groupby("CHAS")["MEDV"].mean())
+</code></pre>
+
+      <h3>Checklist</h3>
+      <p>Tick these off as you do your own EDA (saved in this browser):</p>
+      <ul class="checklist">
+        <li><label><input type="checkbox"> Loaded the file correctly (separator, header, column names)</label></li>
+        <li><label><input type="checkbox"> Wrote down what each column means and its type</label></li>
+        <li><label><input type="checkbox"> Checked for missing values and duplicates</label></li>
+        <li><label><input type="checkbox"> Read <code>describe()</code>: compared mean vs. median, looked at min/max</label></li>
+        <li><label><input type="checkbox"> Plotted a histogram of every numeric column</label></li>
+        <li><label><input type="checkbox"> Investigated outliers and capped values</label></li>
+        <li><label><input type="checkbox"> Checked correlations with the target and between features</label></li>
+        <li><label><input type="checkbox"> Looked at scatter plots for the strongest relationships</label></li>
+        <li><label><input type="checkbox"> Questioned whether any feature is unfair or shouldn't be used</label></li>
+        <li><label><input type="checkbox"> Wrote down 3 findings and 3 open questions</label></li>
+      </ul>
+      <div class="callout"><p><strong>The deliverable of EDA is not charts — it's findings.</strong> For this dataset, e.g.: "Price rises with room count and falls with LSTAT; MEDV is capped at 50 for 16 tracts; CRIM is heavily skewed; RAD and TAX are redundant; column B raises fairness concerns."</p></div>
+      <a class="next" href="#quiz">Next: Quiz →</a>
+    </section>
+
+    <!-- 7 ----------------------------------------------------------------->
+    <section class="lesson" id="quiz">
+      <p class="eyebrow">Lesson 7</p>
+      <h2>Check your understanding</h2>
+      <p class="score" id="quiz-score">0 / 0 correct</p>
+
+      <div class="quiz">
+        <p class="q">1. What is the main goal of EDA?</p>
+        <button class="opt">Build the most accurate prediction model</button>
+        <button class="opt" data-correct>Understand the data's structure, quality and patterns before modelling</button>
+        <button class="opt">Prove a hypothesis is statistically significant</button>
+        <p class="why">EDA is about understanding and generating questions. Confirming hypotheses and building models come afterwards.</p>
+      </div>
+
+      <div class="quiz">
+        <p class="q">2. <code>CRIM</code> has mean 3.61 and median 0.26. What does that tell you?</p>
+        <button class="opt">The data has missing values</button>
+        <button class="opt">The variable is symmetric</button>
+        <button class="opt" data-correct>It's right-skewed: a few very large values pull the mean up</button>
+        <p class="why">When the mean is much larger than the median, a long right tail of big values is inflating the mean.</p>
+      </div>
+
+      <div class="quiz">
+        <p class="q">3. 16 tracts have <code>MEDV</code> exactly 50.0, the maximum. Best first step?</p>
+        <button class="opt">Delete them immediately — they're outliers</button>
+        <button class="opt" data-correct>Investigate: it looks like a cap, so the true values are unknown</button>
+        <button class="opt">Ignore it; it's only 3% of the data</button>
+        <p class="why">A pile-up at a round maximum usually means censoring. Decide deliberately how to handle it (flag, drop, or use a method that handles censored data) — and document why.</p>
+      </div>
+
+      <div class="quiz">
+        <p class="q">4. <code>LSTAT</code> vs. <code>MEDV</code> has r = −0.74. Which statement is correct?</p>
+        <button class="opt">Lowering LSTAT will cause house prices to rise</button>
+        <button class="opt" data-correct>Tracts with a higher LSTAT tend to have lower prices</button>
+        <button class="opt">The relationship must be a perfect straight line</button>
+        <p class="why">Correlation describes how variables move together, not cause and effect. And the scatter shows the relationship is actually curved.</p>
+      </div>
+
+      <div class="quiz">
+        <p class="q">5. <code>RAD</code> and <code>TAX</code> correlate at 0.91. Why does that matter?</p>
+        <button class="opt">It proves highway access increases taxes</button>
+        <button class="opt">It means one of them has errors</button>
+        <button class="opt" data-correct>They carry overlapping information, which can destabilise some models</button>
+        <p class="why">Highly correlated features are redundant (multicollinearity). Linear models' coefficients become unstable; you might keep one or combine them.</p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
